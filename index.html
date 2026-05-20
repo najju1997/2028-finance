@@ -344,7 +344,7 @@ function FinanceProvider({children}){
       const totalInc=yourSal+wifeSal+extra+freelance+extraInc+intA+intB+taxRet;
       const living=(ym<dates.expDrop?expenses.expWk:expenses.expWkPost)*WPM;
       const carRun=ym>=dates.carMonth?expenses.carRun*WPM:0;
-      const cc=ym<dates.childcareStart?0:ym<dates.ccsStart?ccNopr*childcare.days*WPM:ccPr*childcare.days*WPM;
+  ------ cc=ym<dates.childcareStart?0:ym<dates.ccsStart?ccNopr*childcare.days*WPM:ccPr*childcare.days*WPM;
       const extraExp=(extraExpenses||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm)
         .reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0);
       const ooThis=oo[ym]||0;
@@ -1108,7 +1108,7 @@ function computeLife(D) {
     if (age===31) return D.sal31;
     if (age===32) return D.sal32;
     if (age===33) return D.sal33;
-    if (age===34) return D.sal34;
+  --- if (age===34) return D.sal34;
     return D.sal34 * Math.pow(1+D.salGrowth, age-34);
   }
   function wifeSalaryGross(age) {
@@ -1565,7 +1565,7 @@ function LifeAssumptions(){
         React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
           React.createElement('p',null,'Enter the exact date for each event. Age auto-calculates from date. Events are drawn from the offset account.')
         ),
-        ...(D.lifeEvents||[]).map(ev=>React.createElement(LifeEventRow,{key:ev.id,ev,
+      ...(D.lifeEvents||[]).map(ev=>React.createElement(LifeEventRow,{key:ev.id,ev,
           onUpdate:(k,v)=>setD(p=>({...p,lifeEvents:p.lifeEvents.map(e=>e.id===ev.id?{...e,[k]:v}:e)})),
           onRemove:()=>setD(p=>({...p,lifeEvents:p.lifeEvents.filter(e=>e.id!==ev.id)}))
         })),
@@ -1607,7 +1607,7 @@ function LifeAssumptions(){
 
 // ── Life Results Page ─────────────────────────────────────────────────────
 function LifeResults(){
-  const {rows,D}=useLife();
+  const {rows,D,update}=useLife();
   const [sub,setSub]=useState('summary');
   const SUBS=[
     {id:'summary',label:'📊 Milestones'},
@@ -1619,9 +1619,39 @@ function LifeResults(){
   const last=rows[rows.length-1]||{};
   const at=(age)=>rows.find(r=>r.age===age)||{};
 
+  // Compute all strategies for comparison in the graph
+  const rowsS1 = useMemo(() => computeLife({ ...D, strategy: 1 }), [D]);
+  const rowsS2 = useMemo(() => computeLife({ ...D, strategy: 2 }), [D]);
+  const rowsS3 = useMemo(() => computeLife({ ...D, strategy: 3 }), [D]);
+
+  const comparisonData = useMemo(() => {
+    return rows.map((r, idx) => ({
+      age: r.age,
+      'S1 · 100% Offset': rowsS1[idx]?.passiveIncome,
+      'S2 · 50/50 ETF': rowsS2[idx]?.passiveIncome,
+      'S3 · Inv. Property': rowsS3[idx]?.passiveIncome,
+    }));
+  }, [rows, rowsS1, rowsS2, rowsS3]);
+
   return React.createElement('div',null,
-    React.createElement('h1',{className:'page-title'},'Life Plan Results'),
-    React.createElement('p',{className:'page-subtitle'},'Strategy '+(D.strategy===1?'1: 100% Offset':D.strategy===2?'2: 50/50 ETF':'3: Investment Property')+' · Age 31→65'),
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
+      React.createElement('div',null,
+        React.createElement('h1',{className:'page-title'},'Life Plan Results'),
+        React.createElement('p',{className:'page-subtitle'},'Strategy '+(D.strategy===1?'1: 100% Offset':D.strategy===2?'2: 50/50 ETF':'3: Investment Property')+' · Age 31→65')
+      ),
+      React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
+        React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--text2)'}},'Strategy:'),
+        ...[{v:1,l:'1 · 100% Offset'},{v:2,l:'2 · 50/50 ETF'},{v:3,l:'3 · Inv. Property'}].map(s=>
+          React.createElement('button',{key:s.v,
+            style:{padding:'.35rem .8rem',borderRadius:'var(--radius-sm)',border:'1px solid',
+              borderColor:D.strategy===s.v?'var(--gold-dim)':'var(--border)',
+              background:D.strategy===s.v?'var(--gold-glow)':'transparent',
+              color:D.strategy===s.v?'var(--gold)':'var(--text2)',
+              cursor:'pointer',fontSize:'var(--t-xs)',fontFamily:"'Syne',sans-serif",fontWeight:600},
+            onClick:()=>update('strategy',s.v)},s.l)
+        )
+      )
+    ),
     React.createElement('nav',{className:'subnav'},
       ...SUBS.map(s=>React.createElement('button',{key:s.id,className:'subnav-btn'+(sub===s.id?' active':''),onClick:()=>setSub(s.id)},s.label))
     ),
@@ -1746,15 +1776,18 @@ function LifeResults(){
 
     sub==='passive'&&React.createElement('div',null,
       React.createElement('div',{className:'chart-card'},
-        React.createElement('div',{className:'chart-title'},'Passive Income Potential (3.5% SWR)'),
+        React.createElement('div',{className:'chart-title'},'Passive Income Potential Comparison (3.5% SWR)'),
         React.createElement(ResponsiveContainer,{width:'100%',height:260},
-          React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(LineChart,{data:comparisonData,margin:{top:8,right:16,bottom:0,left:8}},
             React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
             React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
             React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
             React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(Line,{type:'monotone',dataKey:'passiveIncome',name:'Passive Income',stroke:'var(--gold)',strokeWidth:2.5,dot:false}),
-            React.createElement(ReferenceLine,{x:60,stroke:'var(--green)',strokeDasharray:'4 2',label:{value:'Age 60',fill:'var(--green)',fontSize:11}})
+            React.createElement(Line,{type:'monotone',dataKey:'S1 · 100% Offset',name:'1 · 100% Offset',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'S2 · 50/50 ETF',name:'2 · 50/50 ETF',stroke:'var(--gold)',strokeWidth:2.5,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'S3 · Inv. Property',name:'3 · Inv. Property',stroke:'var(--green)',strokeWidth:2.5,dot:false}),
+            React.createElement(ReferenceLine,{x:60,stroke:'var(--red)',strokeDasharray:'4 2',label:{value:'Age 60',fill:'var(--red)',fontSize:11}}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)',marginTop:'0.5rem'}})
           )
         )
       ),
