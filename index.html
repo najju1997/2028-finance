@@ -79,15 +79,32 @@ body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--b
 .data-table td:first-child{text-align:left;color:var(--text);font-weight:500;position:sticky;left:0;background:var(--surface);z-index:1}
 .data-table tr:hover td,.data-table tr:hover td:first-child{background:var(--surface2)}
 .pos{color:var(--green)}.neg{color:var(--red)}.gold-t{color:var(--gold);font-weight:600}
-.dyn-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr));gap:.75rem;padding:.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:.5rem;align-items:end}
-.btn-add{background:transparent;border:1px dashed var(--border2);color:var(--text2);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;width:100%;margin-top:.5rem;font-family:'DM Sans',sans-serif}
+.timeline{display:flex;flex-direction:column}
+.tl-item{display:flex;gap:1rem;padding:.9rem 0;border-bottom:1px solid var(--border)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:6px}
+.tl-dot.warn{background:var(--red)}.tl-dot.ok{background:var(--green)}
+.tl-month{font-family:'Syne',sans-serif;font-size:var(--t-sm);font-weight:700;color:var(--gold);min-width:5rem;flex-shrink:0}
+.tl-desc{font-size:var(--t-sm);color:var(--text2);line-height:1.5}
+.nepal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:1rem;margin-bottom:1.25rem}
+.nepal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.nc-label{font-size:var(--t-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.nc-nrs{font-family:'Syne',sans-serif;font-size:var(--t-lg);font-weight:700}
+.nc-aud{font-size:var(--t-sm);color:var(--gold);margin-top:.2rem}
+@media(max-width:768px){.desktop-nav{display:none}.hamburger{display:flex}.input-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stat-grid{grid-template-columns:1fr}.subnav-btn{font-size:var(--t-xs);padding:.35rem .6rem}.tl-month{min-width:4rem}}
+
+/* Dynamic list rows */
+.dyn-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:.75rem;padding:.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:.5rem;align-items:end}
+.btn-add{background:transparent;border:1px dashed var(--border2);color:var(--text2);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;width:100%;margin-top:.5rem;transition:all .2s;font-family:'DM Sans',sans-serif}
 .btn-add:hover{border-color:var(--gold-dim);color:var(--gold)}
-.btn-remove{background:transparent;border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:var(--t-xs);cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-remove{background:transparent;border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:var(--t-xs);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
 .btn-remove:hover{background:var(--red);color:#fff}
-.btn-fetch{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-fetch:hover:not(:disabled){border-color:var(--gold-dim);color:var(--gold)}
+.btn-fetch{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-fetch:hover{border-color:var(--gold-dim);color:var(--gold)}
 .btn-fetch:disabled{opacity:.5;cursor:not-allowed}
 select.input-field{appearance:auto}
+
 #login-screen{display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)}
 #app-screen{display:none}
 .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem 2rem;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.5)}
@@ -140,7 +157,7 @@ function doLogin(){
   var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');
   err.textContent='';
   if(u==='ujjan'&&p==='AbCd@1949'){
-    localStorage.setItem('FP_Logged_In','true');
+    localStorage.setItem('FP_Logged_In','true'); // Save HTML login state
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
     if(!window._appMounted)initApp();
@@ -149,6 +166,7 @@ function doLogin(){
   }
 }
 document.addEventListener('DOMContentLoaded',function(){
+  // Auto-login if previously authenticated
   if(localStorage.getItem('FP_Logged_In')==='true'){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
@@ -166,9 +184,10 @@ document.addEventListener('DOMContentLoaded',function(){
 
 const {useState,useMemo,useEffect,useContext,createContext,useCallback}=React;
 const {LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,Legend,
-       ResponsiveContainer,ReferenceLine,Cell,AreaChart,Area}=Recharts;
+       ResponsiveContainer,ReferenceLine,Cell}=Recharts;
 
-// ── Shared Config ─────────────────────────────────────────────────────────
+
+// ── Defaults ──────────────────────────────────────────────────────────────
 const DEFAULTS={
   dates:{yourSalRise:202607,wifeP2:202607,wifeP3:202707,extraEnd:202611,expDrop:202707,
     childcareStart:202707,ccsStart:202711,lodge485:202707,agentPay:202708,carMonth:202706,
@@ -181,64 +200,826 @@ const DEFAULTS={
   nepal:{noInt:40,fixed12:20,mktYou:30,mktWife:10,nrsRate:0.04,exchange:95,exchangeAuto:false,exchangeLoading:false},
   oneoff:{tuit1:9500,tuit2:9500,v485pri:4770,v485sec:2385,v485adm:500,oshc:1200,
     skills:600,english:400,police:200,medicals:600,agent:3000,skills2:300,prPri:4640,prSec:2330,stateNom:300},
-  extraIncomes:[], extraExpenses:[], extraOneoffs:[]
+  extraIncomes:[],
+  extraExpenses:[],
+  extraOneoffs:[]
 };
 
-// ── Context Provider ──────────────────────────────────────────────────────
+// ── Context ───────────────────────────────────────────────────────────────
 const FC=createContext(null);
 function FinanceProvider({children}){
-  const [A,setA]=useState(()=>{ try{const s=localStorage.getItem('FP_A');if(s)return JSON.parse(s);}catch(e){} return DEFAULTS; });
-  useEffect(()=>{localStorage.setItem('FP_A',JSON.stringify(A));},[A]);
+  const [A,setA]=useState(()=>{
+    try{const s=localStorage.getItem('FinancePlan_A');if(s)return JSON.parse(s);}catch(e){}
+    return DEFAULTS;
+  });
+  useEffect(()=>{localStorage.setItem('FinancePlan_A',JSON.stringify(A));},[A]);
+
   const update=useCallback((sec,key,val)=>setA(p=>({...p,[sec]:{...p[sec],[key]:val}})),[]);
-  return React.createElement(FC.Provider,{value:{A,setA,update}},children);
-}
-const useFinance=()=>useContext(FC);
+  const WPM=365.25/12/7;
 
-// ── Projection Section ────────────────────────────────────────────────────
-function Proj2028(){
-  const {A,update}=useFinance();
-  const {dates,income,savings,expenses,childcare,tax,oneoff,extraIncomes,extraExpenses,extraOneoffs}=A;
-  const [tab,setTab]=useState(()=>localStorage.getItem('FP_P_Tab') || 'assumptions');
-  useEffect(()=>localStorage.setItem('FP_P_Tab', tab), [tab]);
+  const fetchRate=useCallback(async()=>{
+    update('nepal','exchangeLoading',true);
+    try{
+      const r=await fetch('https://api.exchangerate-api.com/v4/latest/AUD');
+      if(r.ok){const d=await r.json();if(d.rates&&d.rates.NPR){
+        const rate=parseFloat(d.rates.NPR.toFixed(2));
+        setA(p=>({...p,nepal:{...p.nepal,exchange:rate,exchangeAuto:true,exchangeLoading:false}}));
+        return;
+      }}
+    }catch(e){}
+    try{
+      const r2=await fetch('https://api.frankfurter.app/latest?from=AUD&to=NPR');
+      if(r2.ok){const d2=await r2.json();if(d2.rates&&d2.rates.NPR){
+        const rate=parseFloat(d2.rates.NPR.toFixed(2));
+        setA(p=>({...p,nepal:{...p.nepal,exchange:rate,exchangeAuto:true,exchangeLoading:false}}));
+        return;
+      }}
+    }catch(e){}
+    update('nepal','exchangeLoading',false);
+  },[update]);
 
-  const rows = useMemo(()=>{
-    const WPM=365.25/12/7;
+  const compute=useCallback(()=>{
+    const {dates,income,savings,expenses,childcare,tax,oneoff,extraIncomes,extraExpenses,extraOneoffs}=A;
     const ccNopr=childcare.dailyRate*(1-childcare.discount);
     const ccPr=childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate);
-    const oo={}; const add=(ym,v)=>{oo[ym]=(oo[ym]||0)+v};
+    const oo={};
+    const add=(ym,v)=>{oo[ym]=(oo[ym]||0)+v};
     add(dates.tuit1,oneoff.tuit1*1.1); add(dates.tuit2,oneoff.tuit2*1.1);
     const v485=oneoff.v485pri+oneoff.v485sec+oneoff.v485adm+oneoff.oshc+oneoff.skills+oneoff.english+oneoff.police+oneoff.medicals;
-    add(dates.lodge485,v485*1.1); add(dates.agentPay,(oneoff.agent+oneoff.skills2)*1.1);
-    add(dates.carMonth,expenses.carCost*1.1); add(dates.prGrant,(oneoff.prPri+oneoff.prSec+oneoff.stateNom)*1.1);
+    add(dates.lodge485,v485*1.1);
+    add(dates.agentPay,(oneoff.agent+oneoff.skills2)*1.1);
+    add(dates.carMonth,expenses.carCost*1.1);
+    add(dates.prGrant,(oneoff.prPri+oneoff.prSec+oneoff.stateNom)*1.1);
     (extraOneoffs||[]).forEach(x=>{if(x.ym&&x.amount)add(x.ym,x.amount*(1+(x.buffer||10)/100));});
-    function taxCalc(inc){ const {taxFree,r1,r2,r3,lmito,medicare}=tax; let t=0; if(inc<=taxFree)t=0; else if(inc<=45000)t=(inc-taxFree)*r1; else if(inc<=120000)t=5092+(inc-45000)*r2; else t=29467+(inc-120000)*r3; return Math.max(0,t+inc*medicare-lmito); }
+    function taxCalc(inc){
+      const {taxFree,r1,r2,r3,lmito,medicare}=tax;
+      let t=0;
+      if(inc<=taxFree)t=0;
+      else if(inc<=45000)t=(inc-taxFree)*r1;
+      else if(inc<=120000)t=5092+(inc-45000)*r2;
+      else t=29467+(inc-120000)*r3;
+      return Math.max(0,t+inc*medicare-lmito);
+    }
     const ref=(y,w)=>Math.max(0,taxCalc(y)*0.05+tax.lmito)+Math.max(0,taxCalc(w)*0.05+tax.lmito);
-    const taxMap={}; taxMap[dates.tax1]=ref(income.yourSalLow*52+income.extraYou*26,income.wifeP1*52); taxMap[dates.tax2]=ref(income.yourSalLow*4+income.yourSalHigh*48,income.wifeP2*52+income.freelance*52); taxMap[dates.tax3]=ref(income.yourSalHigh*52,income.wifeP2*4+income.wifeP3*48);
+    const taxMap={};
+    taxMap[dates.tax1]=ref(income.yourSalLow*52+income.extraYou*26,income.wifeP1*52);
+    taxMap[dates.tax2]=ref(income.yourSalLow*4+income.yourSalHigh*48,income.wifeP2*52+income.freelance*52);
+    taxMap[dates.tax3]=ref(income.yourSalHigh*52,income.wifeP2*4+income.wifeP3*48);
     const rows=[];let balA=savings.acctA,balB=savings.acctB;let y=2026,m=6;
     const ML=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     while(y*100+m<=202807){
-      const ym=y*100+m; const yourSal=(ym<dates.yourSalRise?income.yourSalLow:income.yourSalHigh)*WPM; const wifeSal=(ym<dates.wifeP2?income.wifeP1:ym<dates.wifeP3?income.wifeP2:income.wifeP3)*WPM; const extra=ym<=dates.extraEnd?income.extraYou*WPM:0; const freelance=income.freelance*WPM; const extraInc=(extraIncomes||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm).reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0); const intA=Math.max(0,balA)*savings.macRate/12; const intB=Math.max(0,balB)*savings.macRate/12; const taxRet=taxMap[ym]||0; const totalInc=yourSal+wifeSal+extra+freelance+extraInc+intA+intB+taxRet; const living=(ym<dates.expDrop?expenses.expWk:expenses.expWkPost)*WPM; const carRun=ym>=dates.carMonth?expenses.carRun*WPM:0; const cc=ym<dates.childcareStart?0:ym<dates.ccsStart?ccNopr*childcare.days*WPM:ccPr*childcare.days*WPM; const extraExp=(extraExpenses||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm).reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0); const ooThis=oo[ym]||0; const totalExp=living+carRun+cc+extraExp+ooThis; const net=totalInc-totalExp; balB+=net; rows.push({label:ML[m-1]+'-'+String(y).slice(2),balA,balB,total:balA+balB}); m++; if(m>12){m=1;y++;}
+      const ym=y*100+m;
+      const yourSal=(ym<dates.yourSalRise?income.yourSalLow:income.yourSalHigh)*WPM;
+      const wifeSal=(ym<dates.wifeP2?income.wifeP1:ym<dates.wifeP3?income.wifeP2:income.wifeP3)*WPM;
+      const extra=ym<=dates.extraEnd?income.extraYou*WPM:0;
+      const freelance=income.freelance*WPM;
+      const extraInc=(extraIncomes||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm)
+        .reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0);
+      const intA=Math.max(0,balA)*savings.macRate/12;
+      const intB=Math.max(0,balB)*savings.macRate/12;
+      const taxRet=taxMap[ym]||0;
+      const totalInc=yourSal+wifeSal+extra+freelance+extraInc+intA+intB+taxRet;
+      const living=(ym<dates.expDrop?expenses.expWk:expenses.expWkPost)*WPM;
+      const carRun=ym>=dates.carMonth?expenses.carRun*WPM:0;
+      const cc=ym<dates.childcareStart?0:ym<dates.ccsStart?ccNopr*childcare.days*WPM:ccPr*childcare.days*WPM;
+      const extraExp=(extraExpenses||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm)
+        .reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0);
+      const ooThis=oo[ym]||0;
+      const totalExp=living+carRun+cc+extraExp+ooThis;
+      const net=totalInc-totalExp;
+      balB+=net;
+      rows.push({ym,label:ML[m-1]+'-'+String(y).slice(2),yourSal,wifeSal,extra,freelance,extraInc,
+        intA,intB,taxRet,totalInc,living,carRun,cc,extraExp,ooThis,totalExp,net,balA,balB,total:balA+balB});
+      m++;if(m>12){m=1;y++;}
     }
     return rows;
   },[A]);
 
-  return React.createElement('div',null,
-    React.createElement('nav',{className:'subnav'},
-      React.createElement('button',{className:'subnav-btn'+(tab==='assumptions'?' active':''),onClick:()=>setTab('assumptions')},'⚙️ Assumptions'),
-      React.createElement('button',{className:'subnav-btn'+(tab==='results'?' active':''),onClick:()=>setTab('results')},'📊 Results')
+  const nepalCalc=useCallback(()=>{
+    const {nepal}=A;
+    const yrs=(new Date('2028-07-19')-new Date('2026-05-19'))/(365.25*24*3600*1000);
+    const noInt=nepal.noInt*1e5;
+    const fixed=nepal.fixed12*1e5*Math.pow(1.12,yrs);
+    const mktYou=nepal.mktYou*1e5*Math.pow(1+nepal.nrsRate,yrs);
+    const mktWife=nepal.mktWife*1e5*Math.pow(1+nepal.nrsRate,yrs);
+    const total=noInt+fixed+mktYou+mktWife;
+    return {noInt,fixed,mktYou,mktWife,total,totalAUD:total/nepal.exchange,years:yrs};
+  },[A]);
+
+  return React.createElement(FC.Provider,{value:{A,setA,update,compute,nepalCalc,fetchRate}},children);
+}
+const useFinance=()=>useContext(FC);
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const fmt=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
+const fmtL=n=>(n/1e5).toFixed(2)+'L';
+const ymStr=ym=>{const s=String(ym);return s.slice(0,4)+'-'+s.slice(4);};
+const strYm=s=>{const v=parseInt(s.replace('-',''));return isNaN(v)?0:v;};
+
+const TT=({active,payload,label})=>{
+  if(!active||!payload?.length)return null;
+  return React.createElement('div',{style:{background:'var(--surface2)',border:'1px solid var(--border2)',
+      borderRadius:'var(--radius-sm)',padding:'.6rem .9rem',fontSize:'var(--t-xs)'}},
+    React.createElement('p',{style:{color:'var(--gold)',fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:'.3rem'}},label),
+    ...payload.map(p=>React.createElement('p',{key:p.dataKey,style:{color:p.color}},p.name+': '+fmt(p.value)))
+  );
+};
+
+// ── Section ───────────────────────────────────────────────────────────────
+function Section({icon,title,children,open:init=true}){
+  const [open,setOpen]=useState(init);
+  return React.createElement('div',{className:'section-card'},
+    React.createElement('div',{className:'section-header',onClick:()=>setOpen(o=>!o)},
+      React.createElement('div',{className:'section-icon'},icon),
+      React.createElement('span',{className:'section-title'},title),
+      React.createElement('span',{className:'section-chevron',style:{transform:open?'rotate(180deg)':'none'}},'▼')
     ),
-    tab==='assumptions' ? React.createElement(Assumptions,null) : React.createElement(Results,{rows})
+    open&&React.createElement('div',{className:'section-body'},children)
   );
 }
 
-function Assumptions(){ /* ... (Placeholder for existing content) ... */ return React.createElement('p',null,'(Assumption UI content goes here)'); }
-function Results({rows}){ /* ... (Placeholder for existing content) ... */ return React.createElement('p',null,'(Results UI content goes here)'); }
+// ── Free-text number field (type=text so you can freely edit/delete) ───────
+function Field({label,hint,value,onChange,prefix=false,pct=false}){
+  const [raw,setRaw]=useState('');
+  const [focus,setFocus]=useState(false);
+  const displayed=focus?raw:(pct?(value*100).toFixed(2):String(value));
+  const inp=React.createElement('input',{
+    type:'text',inputMode:'decimal',
+    className:'input-field'+(prefix?' has-prefix':''),
+    value:displayed,
+    onFocus:e=>{const s=pct?(value*100).toFixed(2):String(value);setRaw(s);setFocus(true);setTimeout(()=>e.target.select(),0);},
+    onChange:e=>setRaw(e.target.value),
+    onBlur:()=>{const v=parseFloat(raw.replace(/[^0-9.\-]/g,''));if(!isNaN(v))onChange(pct?v/100:v);setFocus(false);}
+  });
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    prefix?React.createElement('div',{className:'input-wrap'},React.createElement('span',{className:'input-prefix'},'$'),inp):inp,
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
 
-// ── Life Planner ──────────────────────────────────────────────────────────
+// ── Date picker (native month) ────────────────────────────────────────────
+function DateField({label,hint,value,onChange}){
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    React.createElement('input',{type:'month',className:'input-field',value:ymStr(value),
+      onChange:e=>{const v=strYm(e.target.value);if(v>0)onChange(v);}}),
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
+
+const G=(...c)=>React.createElement('div',{className:'input-grid'},...c);
+const SL=t=>React.createElement('p',{className:'input-sub-label'},t);
+
+// ── Dynamic row item — NO hooks inside map ────────────────────────────────
+function DynFieldCell({label,value,prefix,onCommit}){
+  const [raw,setRaw]=useState('');
+  const [focus,setFocus]=useState(false);
+  const disp=focus?raw:String(value??'');
+  const inp=React.createElement('input',{type:'text',inputMode:'decimal',
+    className:'input-field'+(prefix?' has-prefix':''),value:disp,
+    onFocus:e=>{setRaw(String(value??''));setFocus(true);setTimeout(()=>e.target.select(),0);},
+    onChange:e=>setRaw(e.target.value),
+    onBlur:()=>{const v=parseFloat(raw.replace(/[^0-9.\-]/g,''));if(!isNaN(v))onCommit(v);setFocus(false);}
+  });
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    prefix?React.createElement('div',{className:'input-wrap'},React.createElement('span',{className:'input-prefix'},'$'),inp):inp
+  );
+}
+
+function DynRowItem({row,onUpdate,onRemove,fields}){
+  return React.createElement('div',{className:'dyn-row'},
+    ...fields.map(f=>{
+      if(f.type==='date') return React.createElement('div',{key:f.key,className:'input-group'},
+        React.createElement('label',{className:'input-label'},f.label),
+        React.createElement('input',{type:'month',className:'input-field',
+          value:ymStr(row[f.key]||202606),
+          onChange:e=>{const v=strYm(e.target.value);if(v>0)onUpdate(f.key,v);}})
+      );
+      if(f.type==='select') return React.createElement('div',{key:f.key,className:'input-group'},
+        React.createElement('label',{className:'input-label'},f.label),
+        React.createElement('select',{className:'input-field',value:String(row[f.key]),
+          onChange:e=>onUpdate(f.key,e.target.value==='true')},
+          React.createElement('option',{value:'true'},'Weekly'),
+          React.createElement('option',{value:'false'},'Monthly')
+        )
+      );
+      // text/number — uses a sub-component to isolate state
+      return React.createElement(DynFieldCell,{key:f.key,label:f.label,value:row[f.key],
+        prefix:f.prefix,onCommit:v=>onUpdate(f.key,v)});
+    }),
+    React.createElement('div',{className:'input-group',style:{justifyContent:'flex-end'}},
+      React.createElement('label',{className:'input-label'},'\u00a0'),
+      React.createElement('button',{className:'btn-remove',onClick:onRemove},'✕')
+    )
+  );
+}
+
+function DynList({items,onChange,fields,addLabel,newItem}){
+  return React.createElement('div',null,
+    ...(items||[]).map((row,i)=>React.createElement(DynRowItem,{
+      key:row.id||i,row,fields,
+      onUpdate:(k,v)=>onChange((items||[]).map(r=>r.id===row.id?{...r,[k]:v}:r)),
+      onRemove:()=>onChange((items||[]).filter(r=>r.id!==row.id))
+    })),
+    React.createElement('button',{className:'btn-add',onClick:()=>onChange([...(items||[]),{...newItem,id:Date.now()}])},
+      '+ '+addLabel)
+  );
+}
+
+// ── Assumptions ───────────────────────────────────────────────────────────
+function Assumptions({onGo}){
+  const {A,update,setA,fetchRate}=useFinance();
+  const u=(s,k)=>v=>update(s,k,v);
+  const {dates,income,savings,expenses,childcare,tax,nepal,oneoff,extraIncomes,extraExpenses,extraOneoffs}=A;
+
+  return React.createElement('div',null,
+    React.createElement('h1',{className:'page-title'},'Assumptions'),
+    React.createElement('p',{className:'page-subtitle'},'Edit any value freely. Date fields open a calendar picker.'),
+
+    React.createElement(Section,{icon:'📅',title:'Key Dates'},G(
+      React.createElement(DateField,{label:'Your Salary Rises',hint:'$800→$1,323/wk',value:dates.yourSalRise,onChange:u('dates','yourSalRise')}),
+      React.createElement(DateField,{label:'Wife Salary Phase 2',hint:'$736→$944/wk',value:dates.wifeP2,onChange:u('dates','wifeP2')}),
+      React.createElement(DateField,{label:'Wife Salary Phase 3',hint:'$944→$1,500/wk',value:dates.wifeP3,onChange:u('dates','wifeP3')}),
+      React.createElement(DateField,{label:'Your Extra Income Ends',value:dates.extraEnd,onChange:u('dates','extraEnd')}),
+      React.createElement(DateField,{label:'Expenses Drop',hint:'$1,300→$950/wk',value:dates.expDrop,onChange:u('dates','expDrop')}),
+      React.createElement(DateField,{label:'Childcare Starts',value:dates.childcareStart,onChange:u('dates','childcareStart')}),
+      React.createElement(DateField,{label:'CCS Starts (after PR)',value:dates.ccsStart,onChange:u('dates','ccsStart')}),
+      React.createElement(DateField,{label:'485 Visa Lodgement',value:dates.lodge485,onChange:u('dates','lodge485')}),
+      React.createElement(DateField,{label:'Agent Fees Paid',value:dates.agentPay,onChange:u('dates','agentPay')}),
+      React.createElement(DateField,{label:'Car Purchase Month',value:dates.carMonth,onChange:u('dates','carMonth')}),
+      React.createElement(DateField,{label:'PR Grant Month',value:dates.prGrant,onChange:u('dates','prGrant')}),
+      React.createElement(DateField,{label:'Tuition Payment 1',value:dates.tuit1,onChange:u('dates','tuit1')}),
+      React.createElement(DateField,{label:'Tuition Payment 2',value:dates.tuit2,onChange:u('dates','tuit2')}),
+    )),
+
+    React.createElement(Section,{icon:'💰',title:'Income (weekly after tax)'},
+      G(
+        React.createElement(Field,{label:'Your Salary Ph.1 /wk',value:income.yourSalLow,onChange:u('income','yourSalLow'),prefix:true}),
+        React.createElement(Field,{label:'Your Salary Ph.2 /wk',value:income.yourSalHigh,onChange:u('income','yourSalHigh'),prefix:true}),
+        React.createElement(Field,{label:'Wife Salary Ph.1 /wk',value:income.wifeP1,onChange:u('income','wifeP1'),prefix:true}),
+        React.createElement(Field,{label:'Wife Salary Ph.2 /wk',hint:'During masters',value:income.wifeP2,onChange:u('income','wifeP2'),prefix:true}),
+        React.createElement(Field,{label:'Wife Salary Ph.3 /wk',hint:'After PR',value:income.wifeP3,onChange:u('income','wifeP3'),prefix:true}),
+        React.createElement(Field,{label:'Your Extra Income /wk',value:income.extraYou,onChange:u('income','extraYou'),prefix:true}),
+        React.createElement(Field,{label:'Wife Freelance /wk',value:income.freelance,onChange:u('income','freelance'),prefix:true}),
+      ),
+      SL('ADDITIONAL INCOME STREAMS'),
+      React.createElement(DynList,{items:extraIncomes,
+        onChange:v=>setA(p=>({...p,extraIncomes:v})),
+        addLabel:'Add Income Stream',
+        newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
+        fields:[
+          {key:'label',label:'Label'},
+          {key:'amount',label:'Amount',prefix:true},
+          {key:'fromYm',label:'From',type:'date'},
+          {key:'toYm',label:'To',type:'date'},
+          {key:'weekly',label:'Frequency',type:'select'},
+        ]})
+    ),
+
+    React.createElement(Section,{icon:'🏦',title:'Savings Accounts (AUD)'},G(
+      React.createElement(Field,{label:'Account A – Term Savings',hint:'Fixed; earns 4.5%',value:savings.acctA,onChange:u('savings','acctA'),prefix:true}),
+      React.createElement(Field,{label:'Account B – Spending Acct',hint:'All surplus + draws',value:savings.acctB,onChange:u('savings','acctB'),prefix:true}),
+      React.createElement(Field,{label:'Macquarie Rate p.a.',value:savings.macRate,onChange:u('savings','macRate'),pct:true}),
+    )),
+
+    React.createElement(Section,{icon:'🛒',title:'Living Expenses (weekly, all-in incl. rent)'},
+      G(
+        React.createElement(Field,{label:'Weekly Expenses Ph.1',hint:'Rent, food, transport',value:expenses.expWk,onChange:u('expenses','expWk'),prefix:true}),
+        React.createElement(Field,{label:'Weekly Expenses Ph.2',value:expenses.expWkPost,onChange:u('expenses','expWkPost'),prefix:true}),
+        React.createElement(Field,{label:'Car Purchase (one-off)',value:expenses.carCost,onChange:u('expenses','carCost'),prefix:true}),
+        React.createElement(Field,{label:'Car Running /wk',value:expenses.carRun,onChange:u('expenses','carRun'),prefix:true}),
+      ),
+      SL('ADDITIONAL RECURRING EXPENSES'),
+      React.createElement(DynList,{items:extraExpenses,
+        onChange:v=>setA(p=>({...p,extraExpenses:v})),
+        addLabel:'Add Expense',
+        newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
+        fields:[
+          {key:'label',label:'Label'},
+          {key:'amount',label:'Amount',prefix:true},
+          {key:'fromYm',label:'From',type:'date'},
+          {key:'toYm',label:'To',type:'date'},
+          {key:'weekly',label:'Frequency',type:'select'},
+        ]})
+    ),
+
+    React.createElement(Section,{icon:'🧒',title:'Childcare – Uziel'},
+      G(
+        React.createElement(Field,{label:'Centre Daily Rate',value:childcare.dailyRate,onChange:u('childcare','dailyRate'),prefix:true}),
+        React.createElement(Field,{label:'ECT Discount %',value:childcare.discount,onChange:u('childcare','discount'),pct:true}),
+        React.createElement(Field,{label:'Govt CCS % (after PR)',value:childcare.ccsRate,onChange:u('childcare','ccsRate'),pct:true}),
+        React.createElement(Field,{label:'Days per Week',value:childcare.days,onChange:u('childcare','days')}),
+      ),
+      React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+        React.createElement('p',null,
+          'Gap (no CCS): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+(childcare.dailyRate*(1-childcare.discount)).toFixed(2)+'/day'),
+          '  ·  Gap (with CCS): ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+(childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate)).toFixed(2)+'/day')
+        )
+      )
+    ),
+
+    React.createElement(Section,{icon:'📊',title:'Tax Settings (ATO)',open:false},G(
+      React.createElement(Field,{label:'Tax-Free Threshold',value:tax.taxFree,onChange:u('tax','taxFree'),prefix:true}),
+      React.createElement(Field,{label:'Rate $18k–$45k',value:tax.r1,onChange:u('tax','r1'),pct:true}),
+      React.createElement(Field,{label:'Rate $45k–$120k',value:tax.r2,onChange:u('tax','r2'),pct:true}),
+      React.createElement(Field,{label:'Rate $120k–$180k',value:tax.r3,onChange:u('tax','r3'),pct:true}),
+      React.createElement(Field,{label:'LMITO Offset',value:tax.lmito,onChange:u('tax','lmito'),prefix:true}),
+      React.createElement(Field,{label:'Medicare Levy',value:tax.medicare,onChange:u('tax','medicare'),pct:true}),
+    )),
+
+    React.createElement(Section,{icon:'🏔️',title:'Nepal Savings (NRS)'},
+      G(
+        React.createElement(Field,{label:'No Interest (Lakh)',value:nepal.noInt,onChange:u('nepal','noInt')}),
+        React.createElement(Field,{label:'Fixed 12% p.a. (Lakh)',value:nepal.fixed12,onChange:u('nepal','fixed12')}),
+        React.createElement(Field,{label:'Market Rate – You (Lakh)',value:nepal.mktYou,onChange:u('nepal','mktYou')}),
+        React.createElement(Field,{label:'Market Rate – Wife (Lakh)',value:nepal.mktWife,onChange:u('nepal','mktWife')}),
+        React.createElement(Field,{label:'Nepal Rate p.a.',value:nepal.nrsRate,onChange:u('nepal','nrsRate'),pct:true}),
+      ),
+      React.createElement('div',{style:{marginTop:'1rem'}},
+        React.createElement('label',{className:'input-label'},'AUD / NRS Exchange Rate'),
+        React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',marginTop:'.3rem',flexWrap:'wrap'}},
+          React.createElement('div',{className:'input-wrap',style:{flex:'0 0 140px'}},
+            React.createElement('span',{className:'input-prefix'},'₨'),
+            React.createElement('input',{type:'text',inputMode:'decimal',className:'input-field has-prefix',
+              value:nepal.exchange,
+              onChange:e=>{const v=parseFloat(e.target.value);if(!isNaN(v))update('nepal','exchange',v);}
+            })
+          ),
+          React.createElement('button',{className:'btn-fetch',onClick:fetchRate,disabled:nepal.exchangeLoading},
+            nepal.exchangeLoading?'Fetching…':'🔄 Get Live Rate'),
+          nepal.exchangeAuto&&React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--green)',fontWeight:600}},'✓ Live')
+        )
+      )
+    ),
+
+    React.createElement(Section,{icon:'📋',title:'One-Off Costs (from Acct B + 10% buffer)',open:false},
+      React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+        React.createElement('p',null,'Set to $0 if not applicable. 10% buffer auto-added.')
+      ),
+      SL('TUITION'),G(
+        React.createElement(Field,{label:'Masters Sem 1',value:oneoff.tuit1,onChange:u('oneoff','tuit1'),prefix:true}),
+        React.createElement(Field,{label:'Masters Sem 2',value:oneoff.tuit2,onChange:u('oneoff','tuit2'),prefix:true}),
+      ),
+      SL('485 VISA'),G(
+        React.createElement(Field,{label:'485 – Primary',value:oneoff.v485pri,onChange:u('oneoff','v485pri'),prefix:true}),
+        React.createElement(Field,{label:'485 – Secondary',value:oneoff.v485sec,onChange:u('oneoff','v485sec'),prefix:true}),
+        React.createElement(Field,{label:'Admin / VAC',value:oneoff.v485adm,onChange:u('oneoff','v485adm'),prefix:true}),
+        React.createElement(Field,{label:'OSHC Extension',value:oneoff.oshc,onChange:u('oneoff','oshc'),prefix:true}),
+        React.createElement(Field,{label:'Skills Assessment',value:oneoff.skills,onChange:u('oneoff','skills'),prefix:true}),
+        React.createElement(Field,{label:'English Test',value:oneoff.english,onChange:u('oneoff','english'),prefix:true}),
+        React.createElement(Field,{label:'Police Clearances',value:oneoff.police,onChange:u('oneoff','police'),prefix:true}),
+        React.createElement(Field,{label:'Medicals',value:oneoff.medicals,onChange:u('oneoff','medicals'),prefix:true}),
+      ),
+      SL('AGENT & MISC'),G(
+        React.createElement(Field,{label:'Migration Agent',value:oneoff.agent,onChange:u('oneoff','agent'),prefix:true}),
+        React.createElement(Field,{label:'Additional Skills',value:oneoff.skills2,onChange:u('oneoff','skills2'),prefix:true}),
+      ),
+      SL('PR APPLICATION'),G(
+        React.createElement(Field,{label:'PR – Primary',value:oneoff.prPri,onChange:u('oneoff','prPri'),prefix:true}),
+        React.createElement(Field,{label:'PR – Secondary',value:oneoff.prSec,onChange:u('oneoff','prSec'),prefix:true}),
+        React.createElement(Field,{label:'State Nomination',value:oneoff.stateNom,onChange:u('oneoff','stateNom'),prefix:true}),
+      ),
+      SL('EXTRA ONE-OFF COSTS'),
+      React.createElement(DynList,{items:extraOneoffs,
+        onChange:v=>setA(p=>({...p,extraOneoffs:v})),
+        addLabel:'Add One-Off Cost',
+        newItem:{label:'',amount:0,ym:202607,buffer:10},
+        fields:[
+          {key:'label',label:'Description'},
+          {key:'amount',label:'Amount',prefix:true},
+          {key:'ym',label:'Month',type:'date'},
+          {key:'buffer',label:'Buffer %'},
+        ]})
+    ),
+
+    React.createElement('div',{className:'cta-row'},
+      React.createElement('button',{className:'btn-primary',onClick:onGo},'View Results →')
+    )
+  );
+}
+
+// ── Results pages ─────────────────────────────────────────────────────────
+function Summary({rows,nepal}){
+  const last=rows[rows.length-1];
+  const {A}=useFinance();
+  const totalOO=(Object.values(A.oneoff).reduce((a,b)=>a+b,0)+A.expenses.carCost)*1.1
+    +((A.extraOneoffs||[]).reduce((s,r)=>s+r.amount*(1+(r.buffer||10)/100),0));
+  return React.createElement('div',null,
+    React.createElement('div',{className:'stat-grid'},
+      React.createElement('div',{className:'stat-card highlight'},
+        React.createElement('div',{className:'stat-label'},'Total Wealth – July 2028'),
+        React.createElement('div',{className:'stat-value'},fmt(last.total+nepal.totalAUD)),
+        React.createElement('div',{className:'stat-sub'},'AUD savings + Nepal converted')
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'Account A'),
+        React.createElement('div',{className:'stat-value'},fmt(last.balA)),
+        React.createElement('div',{className:'stat-sub'},'Term savings + 4.5%')
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'Account B'),
+        React.createElement('div',{className:'stat-value',style:{color:last.balB<0?'var(--red)':'var(--text)'}},fmt(last.balB)),
+        React.createElement('div',{className:'stat-sub'},'All surplus + big draws')
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'Nepal (AUD equiv.)'),
+        React.createElement('div',{className:'stat-value'},fmt(nepal.totalAUD)),
+        React.createElement('div',{className:'stat-sub'},fmtL(nepal.total)+' NRS')
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'One-Off Costs'),
+        React.createElement('div',{className:'stat-value neg'},fmt(-totalOO)),
+        React.createElement('div',{className:'stat-sub'},'Visa, tuition, car, PR +10%')
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'AUD/NRS Rate'),
+        React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},A.nepal.exchange),
+        React.createElement('div',{className:'stat-sub'},A.nepal.exchangeAuto?'✓ Live rate':'Manual')
+      ),
+    ),
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Account Balances Over Time'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:280},
+        React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(ReferenceLine,{y:0,stroke:'var(--red)',strokeDasharray:'4 2'}),
+          React.createElement(Line,{type:'monotone',dataKey:'balA',name:'Acct A',stroke:'var(--green)',strokeWidth:2,dot:false}),
+          React.createElement(Line,{type:'monotone',dataKey:'balB',name:'Acct B',stroke:'var(--gold)',strokeWidth:2,dot:false}),
+          React.createElement(Line,{type:'monotone',dataKey:'total',name:'Total AUD',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+          React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+        )
+      )
+    ),
+    React.createElement(Section,{icon:'🎯',title:'Milestone Timeline'},
+      React.createElement('div',{className:'timeline'},
+        ...[
+          {m:'Jun-26',d:'warn',t:'Model starts. Your salary $800/wk. Wife $736/wk. Extra $630/wk active.'},
+          {m:'Jul-26',d:'warn',t:'Your salary → $1,323/wk. Wife → $944/wk (masters starts). Tuition Sem 1 from Acct B.'},
+          {m:'Nov-26',d:'warn',t:'Extra $630/wk stops.'},
+          {m:'Jan-27',d:'warn',t:'Tuition Sem 2 ($9,500) from Account B.'},
+          {m:'Jun-27',d:'warn',t:'Car $10,000 cash from Acct B. Running costs begin. Wife finishes masters.'},
+          {m:'Jul-27',d:'warn',t:'⚠ BIGGEST HIT: 485 visa bundle. Childcare starts $126/day. Wife → $1,500/wk. Expenses → $950/wk.'},
+          {m:'Aug-27',d:'',t:'Student visa expires → Bridging Visa A (free). Agent fees from Acct B.'},
+          {m:'Nov-27',d:'ok',t:'🎉 PR GRANTED. PR fees from Acct B. CCS kicks in → childcare ~$35/day.'},
+          {m:'Jul-28',d:'ok',t:'🎯 Target date. See total wealth above.'},
+        ].map(({m,d,t})=>React.createElement('div',{key:m,className:'tl-item'},
+          React.createElement('div',{className:'tl-dot '+d}),
+          React.createElement('div',{className:'tl-month'},m),
+          React.createElement('div',{className:'tl-desc'},t)
+        ))
+      )
+    )
+  );
+}
+
+function Cashflow({rows}){
+  return React.createElement('div',null,
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Monthly Net Cashflow'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:240},
+        React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:10},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(ReferenceLine,{y:0,stroke:'var(--text3)'}),
+          React.createElement(Bar,{dataKey:'net',name:'Net',radius:[3,3,0,0]},
+            ...rows.map((r,i)=>React.createElement(Cell,{key:i,fill:r.net>=0?'var(--green)':'var(--red)'}))
+          )
+        )
+      )
+    ),
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Income vs Expenses'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:240},
+        React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:10},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(Bar,{dataKey:'totalInc',name:'Income',fill:'var(--green)',radius:[3,3,0,0]}),
+          React.createElement(Bar,{dataKey:'totalExp',name:'Expenses',fill:'var(--red)',radius:[3,3,0,0]}),
+          React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+        )
+      )
+    ),
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Full Monthly Detail'),
+      React.createElement('div',{className:'table-wrap'},
+        React.createElement('table',{className:'data-table'},
+          React.createElement('thead',null,React.createElement('tr',null,
+            ...['Month','Your Sal','Wife Sal','Extra','Freelance','Xtra Inc','Interest','Tax Ret','Total In','Living','Car','Childcare','Xtra Exp','One-offs','Total Out','Net','Acct B']
+              .map(h=>React.createElement('th',{key:h},h))
+          )),
+          React.createElement('tbody',null,
+            ...rows.map(r=>React.createElement('tr',{key:r.ym},
+              React.createElement('td',null,r.label),
+              React.createElement('td',null,fmt(r.yourSal)),
+              React.createElement('td',null,fmt(r.wifeSal)),
+              React.createElement('td',null,r.extra>0?fmt(r.extra):'—'),
+              React.createElement('td',null,fmt(r.freelance)),
+              React.createElement('td',{className:r.extraInc>0?'pos':''},r.extraInc>0?fmt(r.extraInc):'—'),
+              React.createElement('td',null,fmt(r.intA+r.intB)),
+              React.createElement('td',{className:r.taxRet>0?'pos':''},r.taxRet>0?fmt(r.taxRet):'—'),
+              React.createElement('td',{className:'gold-t'},fmt(r.totalInc)),
+              React.createElement('td',null,fmt(r.living)),
+              React.createElement('td',null,r.carRun>0?fmt(r.carRun):'—'),
+              React.createElement('td',null,r.cc>0?fmt(r.cc):'—'),
+              React.createElement('td',{className:r.extraExp>0?'neg':''},r.extraExp>0?fmt(-r.extraExp):'—'),
+              React.createElement('td',{className:r.ooThis>0?'neg':''},r.ooThis>0?fmt(-r.ooThis):'—'),
+              React.createElement('td',{className:'neg'},fmt(-r.totalExp)),
+              React.createElement('td',{className:r.net>=0?'pos':'neg'},fmt(r.net)),
+              React.createElement('td',{className:r.balB>=0?'gold-t':'neg'},fmt(r.balB))
+            ))
+          )
+        )
+      )
+    )
+  );
+}
+
+function IncomePage({rows}){
+  return React.createElement('div',null,
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Income – Stacked'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:300},
+        React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:10},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(Bar,{dataKey:'yourSal',name:'Your Salary',stackId:'a',fill:'var(--blue)'}),
+          React.createElement(Bar,{dataKey:'wifeSal',name:'Wife Salary',stackId:'a',fill:'var(--green)'}),
+          React.createElement(Bar,{dataKey:'extra',name:'Extra',stackId:'a',fill:'var(--gold)'}),
+          React.createElement(Bar,{dataKey:'freelance',name:'Freelance',stackId:'a',fill:'#a78bfa'}),
+          React.createElement(Bar,{dataKey:'extraInc',name:'Extra Streams',stackId:'a',fill:'#f9a8d4'}),
+          React.createElement(Bar,{dataKey:'intA',name:'Int A',stackId:'a',fill:'#34d399'}),
+          React.createElement(Bar,{dataKey:'intB',name:'Int B',stackId:'a',fill:'#6ee7b7'}),
+          React.createElement(Bar,{dataKey:'taxRet',name:'Tax Return',stackId:'a',fill:'#fcd34d'}),
+          React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+        )
+      )
+    ),
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Expenses – Stacked'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:260},
+        React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:10},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(Bar,{dataKey:'living',name:'Living',stackId:'b',fill:'#64748b'}),
+          React.createElement(Bar,{dataKey:'carRun',name:'Car Running',stackId:'b',fill:'#94a3b8'}),
+          React.createElement(Bar,{dataKey:'cc',name:'Childcare',stackId:'b',fill:'#fbbf24'}),
+          React.createElement(Bar,{dataKey:'extraExp',name:'Extra Expenses',stackId:'b',fill:'#fb7185'}),
+          React.createElement(Bar,{dataKey:'ooThis',name:'One-offs',stackId:'b',fill:'var(--red)'}),
+          React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+        )
+      )
+    )
+  );
+}
+
+function NepalPage({nepal}){
+  const {A}=useFinance();
+  const {exchange,nrsRate}=A.nepal;
+  const COLORS=['var(--text3)','var(--gold)','var(--green)','var(--blue)'];
+  const items=[
+    {label:'No Interest – 40L',nrs:nepal.noInt,rate:'0%'},
+    {label:'Fixed 12% – 20L',nrs:nepal.fixed,rate:'12%'},
+    {label:'Market Rate – You',nrs:nepal.mktYou,rate:(nrsRate*100).toFixed(1)+'%'},
+    {label:'Market Rate – Wife',nrs:nepal.mktWife,rate:(nrsRate*100).toFixed(1)+'%'},
+  ];
+  const barData=items.map((it,i)=>({name:['No Int','12% Fixed','Mkt You','Mkt Wife'][i],value:it.nrs/1e5}));
+  return React.createElement('div',null,
+    React.createElement('div',{className:'stat-grid'},
+      React.createElement('div',{className:'stat-card highlight'},
+        React.createElement('div',{className:'stat-label'},'Total Nepal (AUD)'),
+        React.createElement('div',{className:'stat-value'},fmt(nepal.totalAUD)),
+        React.createElement('div',{className:'stat-sub'},'@ '+exchange+' NRS/AUD'+(A.nepal.exchangeAuto?' · live':''))
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'Total Nepal (NRS)'),
+        React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},fmtL(nepal.total))
+      ),
+      React.createElement('div',{className:'stat-card'},
+        React.createElement('div',{className:'stat-label'},'Growth Period'),
+        React.createElement('div',{className:'stat-value'},nepal.years.toFixed(2)+'y'),
+        React.createElement('div',{className:'stat-sub'},'May 2026 → Jul 2028')
+      ),
+    ),
+    React.createElement('div',{className:'nepal-grid'},
+      ...items.map(it=>React.createElement('div',{key:it.label,className:'nepal-card'},
+        React.createElement('div',{className:'nc-label'},it.label),
+        React.createElement('div',{className:'nc-nrs'},fmtL(it.nrs)),
+        React.createElement('div',{className:'nc-aud'},fmt(it.nrs/exchange)+' AUD · '+it.rate)
+      ))
+    ),
+    React.createElement('div',{className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Nepal Breakdown (Lakh NRS)'),
+      React.createElement(ResponsiveContainer,{width:'100%',height:220},
+        React.createElement(BarChart,{data:barData,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'name',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>v+'L',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{formatter:v=>[v.toFixed(2)+'L','Lakh NRS'],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+          React.createElement(Bar,{dataKey:'value',radius:[4,4,0,0]},
+            ...barData.map((_,i)=>React.createElement(Cell,{key:i,fill:COLORS[i]}))
+          )
+        )
+      )
+    )
+  );
+}
+
+const SUBNAV=[{id:'summary',label:'📊 Summary'},{id:'cashflow',label:'💵 Cashflow'},
+  {id:'income',label:'📈 Income & Expenses'},{id:'nepal',label:'🏔️ Nepal'}];
+
+function Results(){
+  const {compute,nepalCalc}=useFinance();
+  const [sub,setSub]=useState('summary');
+  const rows=useMemo(()=>compute(),[compute]);
+  const nepal=useMemo(()=>nepalCalc(),[nepalCalc]);
+  return React.createElement('div',null,
+    React.createElement('h1',{className:'page-title'},'Results'),
+    React.createElement('p',{className:'page-subtitle'},'All figures reflect your current assumptions.'),
+    React.createElement('nav',{className:'subnav'},
+      ...SUBNAV.map(n=>React.createElement('button',{key:n.id,className:'subnav-btn'+(sub===n.id?' active':''),onClick:()=>setSub(n.id)},n.label))
+    ),
+    sub==='summary'&&React.createElement(Summary,{rows,nepal}),
+    sub==='cashflow'&&React.createElement(Cashflow,{rows}),
+    sub==='income'&&React.createElement(IncomePage,{rows}),
+    sub==='nepal'&&React.createElement(NepalPage,{nepal}),
+  );
+}
+
+// ── App root ──────────────────────────────────────────────────────────────
+const NAV=[{id:'assumptions',label:'🇦🇺 Family Plan'},{id:'results',label:'📊 Family Results'},{id:'life',label:'🏠 Life Plan'}];
+
+function AppInner(){
+  const [page,setPage]=useState('assumptions');
+  const [menuOpen,setMenuOpen]=useState(false);
+
+  return React.createElement('div',{className:'app'},
+    React.createElement('header',{className:'topbar'},
+      React.createElement('div',{className:'topbar-inner'},
+        React.createElement('div',{className:'brand'},
+          React.createElement('span',{className:'brand-icon'},'₳'),
+          React.createElement('span',{className:'brand-name'},'FinancePlan ',React.createElement('span',{className:'brand-year'},'2028'))
+        ),
+        React.createElement('nav',{className:'desktop-nav'},
+          ...NAV.map(n=>React.createElement('button',{key:n.id,className:'nav-btn'+(page===n.id?' active':''),onClick:()=>setPage(n.id)},n.label))
+        ),
+        React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center'}},
+          React.createElement('button',{className:'hamburger',onClick:()=>setMenuOpen(o=>!o)},
+            React.createElement('span',{className:'ham-line',style:menuOpen?{transform:'translateY(7px) rotate(45deg)'}:{}}),
+            React.createElement('span',{className:'ham-line',style:menuOpen?{opacity:0}:{}}),
+            React.createElement('span',{className:'ham-line',style:menuOpen?{transform:'translateY(-7px) rotate(-45deg)'}:{}})
+          ),
+          React.createElement('button',{onClick:()=>{
+              localStorage.removeItem('FP_Logged_In');
+              window.location.reload();
+            },
+            style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',
+              cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)'}},
+            'Logout')
+        )
+      ),
+      menuOpen&&React.createElement('div',{className:'mobile-menu'},
+        ...NAV.map(n=>React.createElement('button',{key:n.id,className:'mobile-nav-btn'+(page===n.id?' active':''),onClick:()=>{setPage(n.id);setMenuOpen(false);}},n.label))
+      )
+    ),
+    React.createElement('main',{className:'main-content'},
+      page==='assumptions'&&React.createElement(Assumptions,{onGo:()=>setPage('results')}),
+      page==='results'&&React.createElement(Results,null),
+      page==='life'&&React.createElement(LifePlannerConnected,null)
+    )
+  );
+}
+
+function App(){
+  return React.createElement(FinanceProvider,null,React.createElement(AppInner,null));
+}
+window._appMounted=false;
+function initApp(){window._appMounted=true;ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));}
+
+// Connects Family Plan Jul-28 balance → Life Plan starting cash
+function LifePlannerConnected(){
+  const {compute,nepalCalc}=useFinance();
+  const rows=useMemo(()=>compute(),[compute]);
+  const nepal=useMemo(()=>nepalCalc(),[nepalCalc]);
+  const last=rows[rows.length-1];
+  const startingCash=Math.round((last.balA||0)+(last.balB||0)+(nepal.totalAUD||0));
+  return React.createElement(LifePlanner,{startingCash});
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// LIFE FINANCIAL PLANNER — v7 Dynamic
+// ═══════════════════════════════════════════════════════════════
+
 const LIFE_DEFAULTS = {
-  strategy: 1, startAge: 31, totalCash: 250000, pporPrice: 750000, depositPct: 0.20, legal: 2000, mortgageRate: 0.06, mortgageTerm: 30, pporGrowth: 0.045, sal31: 90000, sal32: 100000, sal33: 110000, sal34: 120000, salGrowth: 0.03, wifeSal31: 90000, wifeSal32: 100000, wifeSal33: 110000, wifeSal34: 120000, wifeSalGrowth: 0.03, sideIncome: 500, sgcRate: 0.12, groceries: 1200, utilities: 280, phone: 200, streaming: 50, clothing: 100, eatOut: 500, gifts: 100, council: 220, water: 80, buildingIns: 150, maintenance: 100, strata: 0, garden: 83, otherHouse: 150, carFuel: 300, carIns: 140, carRego: 85, carService: 150, carReplace: 500, car2: 550, healthIns: 380, lifeIns: 0, incomeProtect: 0, trauma: 0, travel: 800, healthcare: 200, christmas: 150, childcare: 1200, primary: 400, highSchool: 700, kidsActivities: 400, uzielETF: 250, uzielBirthYear: 2023, superYou: 18000, superPartner: 12000, superReturn: 0.07, preservationAge: 60, superSWR: 0.035, etfGross: 0.09, etfFees: 0.002, etfTaxDrag: 0.015, etfSWR: 0.035, cpiRate: 0.03, ipPurchaseAge: 37, ipPrice: 650000, ipDepositPct: 0.20, ipLegal: 2500, ipLoanRate: 0.063, ipGrowth: 0.04, ipGrossYield: 0.035, ipExpenses: 8500, lifeEvents: [], extraIncome: [], extraExpense: []
+  strategy: 1, // 1=Offset, 2=50/50, 3=IP
+  startAge: 31,
+  startDate: '2028-07-01',
+  // A: Starting Position
+  totalCash: 250000,
+  pporPrice: 750000,
+  depositPct: 0.20,
+  legal: 2000,
+  mortgageRate: 0.06,
+  mortgageTerm: 30,
+  pporGrowth: 0.045,
+  // B: Income
+  sal31: 90000, sal32: 100000, sal33: 110000, sal34: 120000, salGrowth: 0.03,
+  wifeSal31: 90000, wifeSal32: 100000, wifeSal33: 110000, wifeSal34: 120000, wifeSalGrowth: 0.03,
+  sideIncome: 500,
+  sgcRate: 0.12,
+  // C: Core Living (monthly)
+  groceries: 1200, utilities: 280, phone: 200, streaming: 50,
+  clothing: 100, eatOut: 500, gifts: 100,
+  // D: Property Running (monthly)
+  council: 220, water: 80, buildingIns: 150, maintenance: 100,
+  strata: 0, garden: 83, otherHouse: 150,
+  // E: Vehicles (monthly)
+  carFuel: 300, carIns: 140, carRego: 85, carService: 150, carReplace: 500,
+  car2: 550,
+  // F: Insurance (monthly)
+  healthIns: 380, lifeIns: 0, incomeProtect: 0, trauma: 0,
+  // G: Savings Goals (monthly)
+  travel: 800, healthcare: 200, christmas: 150,
+  // H: Children (monthly)
+  childcare: 1200, primary: 400, highSchool: 700, kidsActivities: 400, uzielETF: 250,
+  uzielBirthYear: 2023,
+  // I: Super
+  superYou: 18000, superPartner: 12000,
+  superReturn: 0.07, preservationAge: 60, superSWR: 0.035,
+  // J: ETF
+  etfGross: 0.09, etfFees: 0.002, etfTaxDrag: 0.015, etfSWR: 0.035,
+  // K: CPI
+  cpiRate: 0.03,
+  // L: Investment Property
+  ipPurchaseAge: 37, ipPrice: 650000, ipDepositPct: 0.20,
+  ipLegal: 2500, ipLoanRate: 0.063, ipGrowth: 0.04,
+  ipGrossYield: 0.035, ipExpenses: 8500,
+  // M: Life Events (by age)
+  lifeEvents: [
+    {id:1, age:31, date:'2028-07-01', label:'APICS Certification', amount:5000},
+    {id:2, age:33, date:'2030-07-01', label:'Wills & POA', amount:3000},
+    {id:3, age:35, date:'2032-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:4, age:38, date:'2035-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:5, age:40, date:'2037-07-01', label:'Home Renovation + Wills', amount:63000},
+    {id:6, age:41, date:'2038-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:7, age:44, date:'2041-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:8, age:45, date:'2042-07-01', label:'Parents Health Emergency', amount:25000},
+    {id:9, age:46, date:'2043-07-01', label:'Uziel Uni Support', amount:20000},
+    {id:10,age:47, date:'2044-07-01', label:'Overseas Trip', amount:12000},
+    {id:11,age:49, date:'2046-07-01', label:'Uziel 21st Gift', amount:10000},
+    {id:12,age:50, date:'2047-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:13,age:52, date:'2049-07-01', label:'Estate Planning Review', amount:3000},
+    {id:14,age:53, date:'2050-07-01', label:'Overseas Trip', amount:12000},
+    {id:15,age:56, date:'2053-07-01', label:'Overseas Trip', amount:12000},
+    {id:16,age:65, date:'2062-07-01', label:'Aged Care Reserve', amount:150000},
+  ],
+  // Extra customisable fields
+  extraIncome: [],    // {id, label, ageFrom, ageTo, monthlyAmount}
+  extraExpense: [],   // {id, label, ageFrom, ageTo, monthlyAmount, cpiLinked}
 };
 
+// ── Tax calc (ATO 2025-26) ────────────────────────────────────────────────
+function calcNetIncome(gross) {
+  let tax = 0;
+  if (gross <= 18200) tax = 0;
+  else if (gross <= 45000) tax = (gross-18200)*0.19;
+  else if (gross <= 120000) tax = 5092+(gross-45000)*0.325;
+  else if (gross <= 180000) tax = 29467+(gross-120000)*0.37;
+  else tax = 51667+(gross-180000)*0.45;
+  tax += gross*0.02 - 700; // medicare - LITO approx
+  return Math.max(0, gross - Math.max(0,tax));
+}
+
+// ── PMT formula ───────────────────────────────────────────────────────────
+function pmt(rate, nper, pv) {
+  if (rate===0) return pv/nper;
+  return pv*rate*Math.pow(1+rate,nper)/(Math.pow(1+rate,nper)-1);
+}
+
+// VIC Stamp Duty
+function vicStampDuty(price) {
+  if (price <= 25000) return price*0.014;
+  if (price <= 130000) return 350+(price-25000)*0.024;
+  if (price <= 960000) return 2870+(price-130000)*0.06;
+  if (price <= 2000000) return price*0.055;
+  return price*0.065;
+}
+
+// ── Main compute ──────────────────────────────────────────────────────────
 function computeLife(D) {
   const rows = [];
   const stamp = vicStampDuty(D.pporPrice);
@@ -248,128 +1029,728 @@ function computeLife(D) {
   const startOffset = D.totalCash - totalCosts;
   const annualRepay = pmt(D.mortgageRate/12, D.mortgageTerm*12, loan)*12;
   const etfNet = D.etfGross - D.etfFees - D.etfTaxDrag;
+
+  // CPI helper
   const cpi = (base, yrs) => base * Math.pow(1+D.cpiRate, yrs);
-  function salaryGross(age, sal31, sal32, sal33, sal34, growth) {
-    if (age===31) return sal31; if (age===32) return sal32; if (age===33) return sal33; if (age===34) return sal34;
-    return sal34 * Math.pow(1+growth, age-34);
+
+  // Salary for age
+  function salaryGross(age) {
+    if (age===31) return D.sal31;
+    if (age===32) return D.sal32;
+    if (age===33) return D.sal33;
+    if (age===34) return D.sal34;
+    return D.sal34 * Math.pow(1+D.salGrowth, age-34);
   }
-  let offset = startOffset, etf = 0, superBal = D.superYou + D.superPartner, ipVal = 0, ipLoan = 0, ipEquity = 0, pporVal = D.pporPrice, remainLoan = loan;
+  function wifeSalaryGross(age) {
+    if (age===31) return D.wifeSal31 ?? D.sal31;
+    if (age===32) return D.wifeSal32 ?? D.sal32;
+    if (age===33) return D.wifeSal33 ?? D.sal33;
+    if (age===34) return D.wifeSal34 ?? D.sal34;
+    return (D.wifeSal34 ?? D.sal34) * Math.pow(1+(D.wifeSalGrowth ?? D.salGrowth), age-34);
+  }
+
+  // Child expense for age (uziel born uzielBirthYear)
+  function childMonthly(age, yrs) {
+    const uzielAge = age - (D.startAge - 31) + 31 - (2028 - D.uzielBirthYear);
+    // simpler: uziel is ~5 in 2028 (born 2023)
+    const ua = 2028 + (age - 31) - D.uzielBirthYear;
+    if (ua < 4) return cpi(D.kidsActivities, yrs)*12;
+    if (ua <= 5) return cpi(D.childcare + D.kidsActivities, yrs)*12;
+    if (ua <= 12) return cpi(D.primary + D.kidsActivities, yrs)*12;
+    if (ua <= 17) return cpi(D.highSchool + D.kidsActivities, yrs)*12;
+    return D.uzielETF*12; // flat $250/mo for uziel ETF
+  }
+
+  const coreMonthly = D.groceries+D.utilities+D.phone+D.streaming+D.clothing+D.eatOut+D.gifts;
+  const propMonthly = D.council+D.water+D.buildingIns+D.maintenance+D.strata+D.garden+D.otherHouse;
+  const veh1Monthly = D.carFuel+D.carIns+D.carRego+D.carService+D.carReplace;
+  const insMonthly  = D.healthIns+D.lifeIns+D.incomeProtect+D.trauma;
+  const savMonthly  = D.travel+D.healthcare+D.christmas;
+
+  // Life event map
+  const lecMap = {};
+  (D.lifeEvents||[]).forEach(e=>{ lecMap[e.age]=(lecMap[e.age]||0)+e.amount; });
+  // Extra income/expense by age
+  const extraIncMap = {};
+  const extraExpMap = {};
+  (D.extraIncome||[]).forEach(r=>{
+    for(let a=r.ageFrom;a<=r.ageTo;a++){extraIncMap[a]=(extraIncMap[a]||0)+r.monthlyAmount*12;}
+  });
+  (D.extraExpense||[]).forEach(r=>{
+    for(let a=r.ageFrom;a<=r.ageTo;a++){extraExpMap[a]=(extraExpMap[a]||0)+r.monthlyAmount*12;}
+  });
+
+  let offset = startOffset;
+  let etf = 0;
+  let superBal = D.superYou + D.superPartner;
+  let ipVal = 0, ipLoan = 0, ipEquity = 0;
+  let pporVal = D.pporPrice;
+  let remainLoan = loan;
+
   for (let age = D.startAge; age <= 65; age++) {
+    const year = 2028 + (age - D.startAge);
     const yrs = age - D.startAge;
-    const grossYou = salaryGross(age, D.sal31, D.sal32, D.sal33, D.sal34, D.salGrowth);
-    const grossWife = salaryGross(age, D.wifeSal31, D.wifeSal32, D.wifeSal33, D.wifeSal34, D.wifeSalGrowth);
-    const totalInc = calcNetIncome(grossYou) + calcNetIncome(grossWife) + D.sideIncome*12;
-    const totalOut = cpi(D.groceries+D.utilities+D.phone+D.streaming+D.clothing+D.eatOut+D.gifts+D.council+D.water+D.buildingIns+D.maintenance+D.strata+D.garden+D.otherHouse+D.carFuel+D.carIns+D.carRego+D.carService+D.carReplace+(age>=33?D.car2:0)+D.healthIns+D.lifeIns+D.incomeProtect+D.trauma, yrs)*12 + (D.travel+D.healthcare+D.christmas)*12 + (remainLoan>0?annualRepay:0);
-    const netCash = totalInc - totalOut;
-    offset += netCash;
-    if (remainLoan>0) { const interest = remainLoan*D.mortgageRate; remainLoan = Math.max(0, remainLoan - (annualRepay-interest)); } else { etf += netCash; }
-    superBal = (superBal + (grossYou+grossWife)*D.sgcRate) * (1+D.superReturn);
+
+    const grossSal = salaryGross(age);
+    const wifeGrossSal = wifeSalaryGross(age);
+    const netYou = calcNetIncome(grossSal);
+    const netWife = calcNetIncome(wifeGrossSal);
+    const totalIncome = netYou + netWife + D.sideIncome*12 + (extraIncMap[age]||0);
+    const sgcYou = grossSal * D.sgcRate;
+    const sgcWife = wifeGrossSal * D.sgcRate;
+
+    const core = cpi(coreMonthly,yrs)*12;
+    const prop = cpi(propMonthly,yrs)*12;
+    const veh = age>=33 ? cpi(veh1Monthly+D.car2,yrs)*12 : cpi(veh1Monthly,yrs)*12;
+    const ins = cpi(insMonthly,yrs)*12;
+    const sav = savMonthly*12; // not CPI'd per model
+    const child = childMonthly(age, yrs);
+    const extraExp = extraExpMap[age]||0;
+    const mort = remainLoan>0 ? annualRepay : 0;
+
+    // IP in Strategy 3
+    let ipTopup = 0;
+    if (D.strategy===3 && age>=D.ipPurchaseAge) {
+      if (ipLoan===0 && age===D.ipPurchaseAge) {
+        const ipDep = D.ipPrice*D.ipDepositPct;
+        const ipStamp = vicStampDuty(D.ipPrice);
+        ipLoan = D.ipPrice - ipDep;
+        ipVal = D.ipPrice;
+        offset -= (ipDep+ipStamp+D.ipLegal);
+      }
+      const ipRent = ipVal*D.ipGrossYield;
+      const ipInt = ipLoan*D.ipLoanRate;
+      const ipCF = ipRent - ipInt - D.ipExpenses;
+      if (ipCF<0) ipTopup = -ipCF;
+      ipVal *= (1+D.ipGrowth);
+      ipEquity = ipVal - ipLoan;
+    }
+
+    const totalOut = core+prop+veh+ins+sav+child+mort+ipTopup+extraExp;
+    const grossSurplus = totalIncome - totalOut;
+    const lec = lecMap[age]||0;
+    const netCash = grossSurplus - lec;
+
+    // Balance updates
+    if (D.strategy===1) {
+      // All surplus to offset
+      if (remainLoan>0) {
+        offset += netCash;
+        // Principal reduction
+        const interest = remainLoan*D.mortgageRate;
+        const principal = mort - interest;
+        remainLoan = Math.max(0, remainLoan - principal);
+        if (offset > remainLoan) { remainLoan=0; offset -= remainLoan; }
+      } else {
+        etf += netCash;
+      }
+    } else if (D.strategy===2) {
+      // 50/50
+      const half = netCash/2;
+      offset += half;
+      etf = (etf+half)*(1+etfNet);
+      const interest = remainLoan*D.mortgageRate;
+      const principal = mort - interest;
+      remainLoan = Math.max(0, remainLoan - principal);
+    } else {
+      // Strategy 3 - IP
+      offset += netCash;
+      const interest = remainLoan*D.mortgageRate;
+      const principal = mort - interest;
+      remainLoan = Math.max(0, remainLoan - principal);
+    }
+
+    // ETF growth on existing balance (S1: after debt-free)
+    if (D.strategy!==2) etf *= (1+etfNet);
+
+    // Super
+    superBal = (superBal + sgcYou + sgcWife) * (1+D.superReturn);
+
+    // PPOR value
     pporVal *= (1+D.pporGrowth);
-    rows.push({age, pporVal, etf, nw: Math.max(0,offset)+etf+(pporVal-remainLoan), superBal});
+
+    const nw = Math.max(0,offset) + etf + (age>=D.preservationAge?superBal:0) + ipEquity;
+    const nwTotal = Math.max(0,offset) + etf + superBal + pporVal - remainLoan + ipEquity;
+    const passiveIncome = etf*D.etfSWR + (age>=D.preservationAge ? superBal*D.superSWR : 0);
+
+    rows.push({age,year,grossSal: grossSal+wifeGrossSal,netEach: netYou+netWife,totalIncome,core,prop,veh,ins,sav,child,extraExp,
+      mort,ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
+      remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome});
   }
   return rows;
 }
-function calcNetIncome(gross) { let tax = 0; if (gross <= 18200) tax = 0; else if (gross <= 45000) tax = (gross-18200)*0.19; else if (gross <= 120000) tax = 5092+(gross-45000)*0.325; else if (gross <= 180000) tax = 29467+(gross-120000)*0.37; else tax = 51667+(gross-180000)*0.45; tax += gross*0.02 - 700; return Math.max(0, gross - Math.max(0,tax)); }
-function pmt(rate, nper, pv) { return pv*rate*Math.pow(1+rate,nper)/(Math.pow(1+rate,nper)-1); }
-function vicStampDuty(price) { if (price <= 25000) return price*0.014; if (price <= 130000) return 350+(price-25000)*0.024; if (price <= 960000) return 2870+(price-130000)*0.06; if (price <= 2000000) return price*0.055; return price*0.065; }
 
-function LifeResults(){
+// ── Life Planner UI ───────────────────────────────────────────────────────
+const LC=createContext(null);
+function LifeProvider({children,startingCash}){
+  const [D,setD]=useState(()=>{
+    let saved = {};
+    try{const s=localStorage.getItem('FinancePlan_D');if(s) saved=JSON.parse(s);}catch(e){}
+    return {...LIFE_DEFAULTS, ...saved, totalCash: startingCash ?? LIFE_DEFAULTS.totalCash};
+  });
+
+  // Force totalCash to ALWAYS stay in sync with startingCash when it updates from Family Plan
+  useEffect(()=>{
+    setD(p => p.totalCash === startingCash ? p : {...p, totalCash: startingCash});
+  }, [startingCash]);
+
+  useEffect(()=>{
+    const toSave = {...D};
+    delete toSave.totalCash; // Never store dynamic available cash in local storage
+    localStorage.setItem('FinancePlan_D',JSON.stringify(toSave));
+  },[D]);
+
+  const update=useCallback((k,v)=>setD(p=>({...p,[k]:v})),[]);
+  const rows=useMemo(()=>computeLife(D),[D]);
+  return React.createElement(LC.Provider,{value:{D,setD,update,rows}},children);
+}
+const useLife=()=>useContext(LC);
+
+// ── Life Field components ─────────────────────────────────────────────────
+function LField({label,hint,k,pct=false,prefix=false}){
   const {D,update}=useLife();
-  const [targetAge,setTargetAge]=useState(60);
-  const rows1=useMemo(()=>computeLife({...D,strategy:1}),[D]);
-  const rows2=useMemo(()=>computeLife({...D,strategy:2}),[D]);
-  const rows3=useMemo(()=>computeLife({...D,strategy:3}),[D]);
-  
-  const getRow=(r,age)=>r.find(x=>x.age==age);
-  
+  const value=D[k];
+  const [raw,setRaw]=useState('');
+  const [focus,setFocus]=useState(false);
+  const disp=focus?raw:(pct?(value*100).toFixed(2):String(value));
+  const inp=React.createElement('input',{type:'text',inputMode:'decimal',
+    className:'input-field'+(prefix?' has-prefix':''),value:disp,
+    onFocus:e=>{setRaw(pct?(value*100).toFixed(2):String(value));setFocus(true);setTimeout(()=>e.target.select(),0);},
+    onChange:e=>setRaw(e.target.value),
+    onBlur:()=>{const v=parseFloat(raw.replace(/[^0-9.\-]/g,''));if(!isNaN(v))update(k,pct?v/100:v);setFocus(false);}
+  });
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    prefix?React.createElement('div',{className:'input-wrap'},React.createElement('span',{className:'input-prefix'},'$'),inp):inp,
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
+
+function LDate({label,hint,k}){
+  const {D,update}=useLife();
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    React.createElement('input',{type:'date',className:'input-field',value:D[k]||'',
+      onChange:e=>update(k,e.target.value)}),
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
+
+// Life Events dynamic list
+function LifeEventRow({ev,onUpdate,onRemove}){
+  return React.createElement('div',{className:'dyn-row',style:{gridTemplateColumns:'1fr 1.2fr auto auto auto'}},
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Description'),
+      React.createElement('input',{type:'text',className:'input-field',value:ev.label,
+        onChange:e=>onUpdate('label',e.target.value)})
+    ),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Date'),
+      React.createElement('input',{type:'date',className:'input-field',value:ev.date||'',
+        onChange:e=>{
+          onUpdate('date',e.target.value);
+          // Auto-calc age from date
+          const yr=parseInt((e.target.value||'').slice(0,4));
+          if(!isNaN(yr)) onUpdate('age',31+(yr-2028));
+        }})
+    ),
+    React.createElement(DynFieldCell,{label:'Age',value:ev.age,onCommit:v=>onUpdate('age',v)}),
+    React.createElement(DynFieldCell,{label:'Amount ($)',value:ev.amount,prefix:true,onCommit:v=>onUpdate('amount',v)}),
+    React.createElement('div',{className:'input-group',style:{justifyContent:'flex-end'}},
+      React.createElement('label',{className:'input-label'},'\u00a0'),
+      React.createElement('button',{className:'btn-remove',onClick:onRemove},'✕')
+    )
+  );
+}
+
+function ExtraRecRow({row,onUpdate,onRemove,cpiOption}){
+  return React.createElement('div',{className:'dyn-row'},
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Label'),
+      React.createElement('input',{type:'text',className:'input-field',value:row.label||'',
+        onChange:e=>onUpdate('label',e.target.value)})
+    ),
+    React.createElement(DynFieldCell,{label:'Monthly $',value:row.monthlyAmount||0,prefix:true,onCommit:v=>onUpdate('monthlyAmount',v)}),
+    React.createElement(DynFieldCell,{label:'Age From',value:row.ageFrom||31,onCommit:v=>onUpdate('ageFrom',v)}),
+    React.createElement(DynFieldCell,{label:'Age To',value:row.ageTo||65,onCommit:v=>onUpdate('ageTo',v)}),
+    cpiOption&&React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'CPI?'),
+      React.createElement('select',{className:'input-field',value:String(row.cpiLinked||false),
+        onChange:e=>onUpdate('cpiLinked',e.target.value==='true')},
+        React.createElement('option',{value:'false'},'No'),
+        React.createElement('option',{value:'true'},'Yes')
+      )
+    ),
+    React.createElement('div',{className:'input-group',style:{justifyContent:'flex-end'}},
+      React.createElement('label',{className:'input-label'},'\u00a0'),
+      React.createElement('button',{className:'btn-remove',onClick:onRemove},'✕')
+    )
+  );
+}
+
+// ── Life Assumptions Page ─────────────────────────────────────────────────
+function LifeAssumptions(){
+  const {D,setD,update,rows}=useLife();
+  const [sub,setSub]=useState('position');
+
+  const SUBS=[
+    {id:'position',label:'🏠 Position'},
+    {id:'income',label:'💰 Income'},
+    {id:'expenses',label:'🛒 Expenses'},
+    {id:'super',label:'🏦 Super & ETF'},
+    {id:'ip',label:'🏗️ Inv. Property'},
+    {id:'events',label:'📅 Life Events'},
+    {id:'extras',label:'➕ Custom Fields'},
+  ];
+
   return React.createElement('div',null,
-    React.createElement('div',{className:'chart-card'},
-      React.createElement('div',{className:'chart-title'},'Comparison: Passive Income Potential (3.5% SWR)'),
-      React.createElement(ResponsiveContainer,{width:'100%',height:300},
-        React.createElement(LineChart,{data:rows1.map((r,i)=>({age:r.age, s1:rows1[i].etf*0.035, s2:rows2[i].etf*0.035, s3:rows3[i].etf*0.035}))},
-          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
-          React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11}}),
-          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11}}),
-          React.createElement(Tooltip,{contentStyle:{background:'var(--surface2)'}}),
-          React.createElement(Line,{dataKey:'s1',name:'1 · 100% Offset',stroke:'var(--blue)'}),
-          React.createElement(Line,{dataKey:'s2',name:'2 · 50/50 ETF',stroke:'var(--gold)'}),
-          React.createElement(Line,{dataKey:'s3',name:'3 · Inv. Property',stroke:'var(--green)'}),
-          React.createElement(Legend)
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
+      React.createElement('div',null,
+        React.createElement('h1',{className:'page-title'},'Life Financial Planner'),
+        React.createElement('p',{className:'page-subtitle'},'35-year model: Age 31→65. Change any value, results update instantly.')
+      ),
+      React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
+        React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--text2)'}},'Strategy:'),
+        ...[{v:1,l:'1 · 100% Offset'},{v:2,l:'2 · 50/50 ETF'},{v:3,l:'3 · Inv. Property'}].map(s=>
+          React.createElement('button',{key:s.v,
+            style:{padding:'.35rem .8rem',borderRadius:'var(--radius-sm)',border:'1px solid',
+              borderColor:D.strategy===s.v?'var(--gold-dim)':'var(--border)',
+              background:D.strategy===s.v?'var(--gold-glow)':'transparent',
+              color:D.strategy===s.v?'var(--gold)':'var(--text2)',
+              cursor:'pointer',fontSize:'var(--t-xs)',fontFamily:"'Syne',sans-serif",fontWeight:600},
+            onClick:()=>update('strategy',s.v)},s.l)
         )
       )
     ),
-    React.createElement('div',{className:'section-card', style:{padding:'1rem'}},
-      React.createElement('label',{className:'input-label'},'Select Age for Milestone View: '),
-      React.createElement('select',{className:'input-field', style:{width:'100px'}, value:targetAge, onChange:e=>setTargetAge(e.target.value)},
-        [55,60].map(a=>React.createElement('option',{key:a,value:a},'Age '+a))
+
+    React.createElement('nav',{className:'subnav',style:{marginBottom:'1.5rem'}},
+      ...SUBS.map(s=>React.createElement('button',{key:s.id,
+        className:'subnav-btn'+(sub===s.id?' active':''),onClick:()=>setSub(s.id)},s.label))
+    ),
+
+    // POSITION
+    sub==='position'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'📊',title:'Starting Position (July 2028)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LDate,{label:'Start Date',k:'startDate'}),
+          React.createElement(LField,{label:'Start Age',k:'startAge'}),
+          React.createElement(LField,{label:'Total Cash Available',k:'totalCash',prefix:true}),
+          React.createElement(LField,{label:'PPOR Purchase Price',k:'pporPrice',prefix:true}),
+          React.createElement(LField,{label:'Deposit %',k:'depositPct',pct:true}),
+          React.createElement(LField,{label:'Legal & Conveyancing',k:'legal',prefix:true}),
+          React.createElement(LField,{label:'Mortgage Rate',k:'mortgageRate',pct:true,hint:'Variable P&I'}),
+          React.createElement(LField,{label:'Mortgage Term (years)',k:'mortgageTerm'}),
+          React.createElement(LField,{label:'PPOR Annual Growth',k:'pporGrowth',pct:true}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,
+            'Stamp duty (VIC auto-calc): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+Math.round(vicStampDuty(D.pporPrice)).toLocaleString()),
+            '  ·  Loan: ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+Math.round(D.pporPrice*(1-D.depositPct)).toLocaleString()),
+            '  ·  Starting offset: ',React.createElement('strong',{style:{color:'var(--green)'}},'$'+Math.round(D.totalCash-(D.pporPrice*D.depositPct+vicStampDuty(D.pporPrice)+D.legal)).toLocaleString())
+          )
+        )
+      )
+    ),
+
+    // INCOME
+    sub==='income'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'💰',title:'Your Salary'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Salary at Age 31',k:'sal31',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 32',k:'sal32',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 33',k:'sal33',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 34 (target)',k:'sal34',prefix:true}),
+          React.createElement(LField,{label:'Growth Rate from Age 34',k:'salGrowth',pct:true,hint:'3%/yr compounding'}),
+        )
       ),
-      React.createElement('div',{className:'stat-grid', style:{marginTop:'1rem'}},
-        ['PPOR Value','ETF Balance','Net Worth (Excl. Super)'].map(label=>
-          React.createElement('div',{key:label,className:'stat-card'},
-            React.createElement('div',{className:'stat-label'},label),
-            React.createElement('div',{className:'stat-value'},
-              label==='PPOR Value'?fmtA(getRow(rows1,targetAge).pporVal):
-              label==='ETF Balance'?fmtA(getRow(rows1,targetAge).etf):
-              fmtA(getRow(rows1,targetAge).nw)
+      React.createElement(Section,{icon:'👩‍💼',title:'Wife Salary'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Salary at Age 31',k:'wifeSal31',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 32',k:'wifeSal32',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 33',k:'wifeSal33',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 34 (target)',k:'wifeSal34',prefix:true}),
+          React.createElement(LField,{label:'Growth Rate from Age 34',k:'wifeSalGrowth',pct:true,hint:'3%/yr compounding'}),
+        )
+      ),
+      React.createElement(Section,{icon:'💵',title:'Other Income & Super'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Side Income ($/month)',k:'sideIncome',prefix:true}),
+          React.createElement(LField,{label:'SGC Rate',k:'sgcRate',pct:true,hint:'12% employer super'}),
+        )
+      )
+    ),
+
+    // EXPENSES
+    sub==='expenses'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🛒',title:'Core Living (monthly, +3% CPI/yr)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Groceries & Household',k:'groceries',prefix:true}),
+          React.createElement(LField,{label:'Utilities',k:'utilities',prefix:true}),
+          React.createElement(LField,{label:'Phone + Internet',k:'phone',prefix:true}),
+          React.createElement(LField,{label:'Streaming & Subscriptions',k:'streaming',prefix:true}),
+          React.createElement(LField,{label:'Clothing & Personal Care',k:'clothing',prefix:true}),
+          React.createElement(LField,{label:'Eating Out & Entertainment',k:'eatOut',prefix:true}),
+          React.createElement(LField,{label:'Gifts',k:'gifts',prefix:true}),
+          React.createElement(LField,{label:'CPI Rate',k:'cpiRate',pct:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🏡',title:'Property Running (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Council Rates',k:'council',prefix:true}),
+          React.createElement(LField,{label:'Water',k:'water',prefix:true}),
+          React.createElement(LField,{label:'Building Insurance',k:'buildingIns',prefix:true}),
+          React.createElement(LField,{label:'Maintenance Fund',k:'maintenance',prefix:true}),
+          React.createElement(LField,{label:'Strata / Body Corp',k:'strata',prefix:true}),
+          React.createElement(LField,{label:'Garden / Cleaning',k:'garden',prefix:true}),
+          React.createElement(LField,{label:'Other Household',k:'otherHouse',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🚗',title:'Vehicles (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Car 1 Fuel',k:'carFuel',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Insurance',k:'carIns',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Rego',k:'carRego',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Service/Tyres',k:'carService',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Replacement Fund',k:'carReplace',prefix:true}),
+          React.createElement(LField,{label:'Car 2 All-in (age 33+)',k:'car2',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🛡️',title:'Insurance (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Private Health (family)',k:'healthIns',prefix:true}),
+          React.createElement(LField,{label:'Life Insurance',k:'lifeIns',prefix:true}),
+          React.createElement(LField,{label:'Income Protection',k:'incomeProtect',prefix:true}),
+          React.createElement(LField,{label:'Trauma / Critical Illness',k:'trauma',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🎯',title:'Savings Goals (monthly, not CPI-linked)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'International Travel Fund',k:'travel',prefix:true}),
+          React.createElement(LField,{label:'Healthcare Gap / Dental',k:'healthcare',prefix:true}),
+          React.createElement(LField,{label:'Christmas / Domestic',k:'christmas',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'👶',title:'Children & Education (monthly)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Childcare (age 4-5)',k:'childcare',prefix:true}),
+          React.createElement(LField,{label:'Primary School era (age 6-12)',k:'primary',prefix:true}),
+          React.createElement(LField,{label:'High School era (age 13-17)',k:'highSchool',prefix:true}),
+          React.createElement(LField,{label:'Kids Sports & Activities',k:'kidsActivities',prefix:true}),
+          React.createElement(LField,{label:"Uziel's ETF (age 18+, flat)",k:'uzielETF',prefix:true}),
+          React.createElement(LField,{label:'Uziel Birth Year',k:'uzielBirthYear'}),
+        )
+      )
+    ),
+
+    // SUPER & ETF
+    sub==='super'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🏦',title:'Superannuation'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Your Starting Super',k:'superYou',prefix:true}),
+          React.createElement(LField,{label:'Partner Starting Super',k:'superPartner',prefix:true}),
+          React.createElement(LField,{label:'Super Net Return',k:'superReturn',pct:true,hint:'7.5% gross - 0.5% fees'}),
+          React.createElement(LField,{label:'Preservation Age',k:'preservationAge'}),
+          React.createElement(LField,{label:'Super SWR',k:'superSWR',pct:true,hint:'Safe withdrawal rate'}),
+        )
+      ),
+      React.createElement(Section,{icon:'📈',title:'ETF Portfolio'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Gross Return',k:'etfGross',pct:true,hint:'9% ASX200+global'}),
+          React.createElement(LField,{label:'MER Fees',k:'etfFees',pct:true}),
+          React.createElement(LField,{label:'Tax Drag',k:'etfTaxDrag',pct:true}),
+          React.createElement(LField,{label:'ETF SWR',k:'etfSWR',pct:true,hint:'3.5% safe withdrawal'}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,'Net ETF return: ',
+            React.createElement('strong',{style:{color:'var(--gold)'}},(((D.etfGross-D.etfFees-D.etfTaxDrag)*100).toFixed(2))+'%'))
+        )
+      )
+    ),
+
+    // IP
+    sub==='ip'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🏗️',title:'Investment Property (Strategy 3 only)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'IP Purchase Age',k:'ipPurchaseAge'}),
+          React.createElement(LField,{label:'IP Purchase Price',k:'ipPrice',prefix:true}),
+          React.createElement(LField,{label:'IP Deposit %',k:'ipDepositPct',pct:true}),
+          React.createElement(LField,{label:'IP Legal & Conveyancing',k:'ipLegal',prefix:true}),
+          React.createElement(LField,{label:'IP Loan Rate',k:'ipLoanRate',pct:true,hint:'Investor rate ~6.3%'}),
+          React.createElement(LField,{label:'IP Capital Growth Rate',k:'ipGrowth',pct:true}),
+          React.createElement(LField,{label:'IP Gross Rental Yield',k:'ipGrossYield',pct:true}),
+          React.createElement(LField,{label:'IP Annual Expenses',k:'ipExpenses',prefix:true,hint:'Rates, PM, insurance, maintenance'}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,
+            'IP Stamp Duty (VIC): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+Math.round(vicStampDuty(D.ipPrice)).toLocaleString()),
+            '  ·  IP Loan: ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+Math.round(D.ipPrice*(1-D.ipDepositPct)).toLocaleString())
+          )
+        )
+      )
+    ),
+
+    // LIFE EVENTS
+    sub==='events'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'📅',title:'Life Events (one-off costs by date/age)'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Enter the exact date for each event. Age auto-calculates from date. Events are drawn from the offset account.')
+        ),
+      ...(D.lifeEvents||[]).map(ev=>React.createElement(LifeEventRow,{key:ev.id,ev,
+          onUpdate:(k,v)=>setD(p=>({...p,lifeEvents:p.lifeEvents.map(e=>e.id===ev.id?{...e,[k]:v}:e)})),
+          onRemove:()=>setD(p=>({...p,lifeEvents:p.lifeEvents.filter(e=>e.id!==ev.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          lifeEvents:[...p.lifeEvents,{id:Date.now(),age:40,date:'2037-07-01',label:'New Event',amount:5000}]
+        }))},'+ Add Life Event')
+      )
+    ),
+
+    // EXTRAS
+    sub==='extras'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'💵',title:'Extra Income Streams'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Add any recurring income not already modelled (rental, dividends, side business).')
+        ),
+        ...(D.extraIncome||[]).map(row=>React.createElement(ExtraRecRow,{key:row.id,row,cpiOption:false,
+          onUpdate:(k,v)=>setD(p=>({...p,extraIncome:p.extraIncome.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
+          onRemove:()=>setD(p=>({...p,extraIncome:p.extraIncome.filter(r=>r.id!==row.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          extraIncome:[...p.extraIncome,{id:Date.now(),label:'',monthlyAmount:0,ageFrom:31,ageTo:65}]
+        }))},'+ Add Income Stream')
+      ),
+      React.createElement(Section,{icon:'💸',title:'Extra Recurring Expenses'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Add any recurring expense not already modelled.')
+        ),
+        ...(D.extraExpense||[]).map(row=>React.createElement(ExtraRecRow,{key:row.id,row,cpiOption:true,
+          onUpdate:(k,v)=>setD(p=>({...p,extraExpense:p.extraExpense.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
+          onRemove:()=>setD(p=>({...p,extraExpense:p.extraExpense.filter(r=>r.id!==row.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          extraExpense:[...p.extraExpense,{id:Date.now(),label:'',monthlyAmount:0,ageFrom:31,ageTo:65,cpiLinked:false}]
+        }))},'+ Add Expense')
+      )
+    )
+  );
+}
+
+// ── Life Results Page ─────────────────────────────────────────────────────
+function LifeResults(){
+  const {rows,D,update}=useLife();
+  const [sub,setSub]=useState(()=>localStorage.getItem('FP_Life_Res_Tab') || 'summary');
+  const [selectedAge, setSelectedAge] = useState(60); // Default Age Selection
+  
+  useEffect(()=>localStorage.setItem('FP_Life_Res_Tab', sub), [sub]);
+
+  const SUBS=[
+    {id:'summary',label:'📊 Milestones'},
+    {id:'cashflow',label:'💵 Cashflow'},
+    {id:'wealth',label:'📈 Wealth Growth'},
+    {id:'passive',label:'🎯 Passive Income'},
+  ];
+
+  const at=(age)=>rows.find(r=>r.age===age)||{};
+  const currentAgeData = at(selectedAge);
+
+  // Compute all strategies for comparison in the graph
+  const rowsS1 = useMemo(() => computeLife({ ...D, strategy: 1 }), [D]);
+  const rowsS2 = useMemo(() => computeLife({ ...D, strategy: 2 }), [D]);
+  const rowsS3 = useMemo(() => computeLife({ ...D, strategy: 3 }), [D]);
+
+  const comparisonData = useMemo(() => {
+    return rows.map((r, idx) => ({
+      age: r.age,
+      'S1 · 100% Offset': rowsS1[idx]?.passiveIncome,
+      'S2 · 50/50 ETF': rowsS2[idx]?.passiveIncome,
+      'S3 · Inv. Property': rowsS3[idx]?.passiveIncome,
+    }));
+  }, [rows, rowsS1, rowsS2, rowsS3]);
+
+  return React.createElement('div',null,
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
+      React.createElement('div',null,
+        React.createElement('h1',{className:'page-title'},'Life Plan Results'),
+        React.createElement('p',{className:'page-subtitle'},'Strategy '+(D.strategy===1?'1: 100% Offset':D.strategy===2?'2: 50/50 ETF':'3: Investment Property')+' · Age 31→65')
+      ),
+      React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
+        React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--text2)'}},'Strategy:'),
+        ...[{v:1,l:'1 · 100% Offset'},{v:2,l:'2 · 50/50 ETF'},{v:3,l:'3 · Inv. Property'}].map(s=>
+          React.createElement('button',{key:s.v,
+            style:{padding:'.35rem .8rem',borderRadius:'var(--radius-sm)',border:'1px solid',
+              borderColor:D.strategy===s.v?'var(--gold-dim)':'var(--border)',
+              background:D.strategy===s.v?'var(--gold-glow)':'transparent',
+              color:D.strategy===s.v?'var(--gold)':'var(--text2)',
+              cursor:'pointer',fontSize:'var(--t-xs)',fontFamily:"'Syne',sans-serif",fontWeight:600},
+            onClick:()=>update('strategy',s.v)},s.l)
+        )
+      )
+    ),
+    React.createElement('nav',{className:'subnav'},
+      ...SUBS.map(s=>React.createElement('button',{key:s.id,className:'subnav-btn'+(sub===s.id?' active':''),onClick:()=>setSub(s.id)},s.label))
+    ),
+
+    sub==='summary'&&React.createElement('div',null,
+      // Age Selection Tab
+      React.createElement('div',{className:'subnav', style:{borderBottom:'none', marginBottom:'1rem'}},
+         [55, 60].map(a => React.createElement('button', {
+           key: a,
+           className: 'subnav-btn' + (selectedAge === a ? ' active' : ''),
+           onClick: () => setSelectedAge(a)
+         }, 'Age ' + a))
+      ),
+      React.createElement('div',{className:'stat-grid'},
+        React.createElement('div',{className:'stat-card highlight'},
+          React.createElement('div',{className:'stat-label'},'Net Worth (Excl. Super) at Age ' + selectedAge),
+          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.nw)),
+          React.createElement('div',{className:'stat-sub'},'PPOR + ETF + Offset')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'PPOR Value'),
+          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.pporVal)),
+          React.createElement('div',{className:'stat-sub'},'Property Valuation')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'ETF Balance'),
+          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.etf)),
+          React.createElement('div',{className:'stat-sub'},'Investment Portfolio')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'Super Balance'),
+          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.superBal)),
+          React.createElement('div',{className:'stat-sub'},'Combined Superannuation')
+        )
+      ),
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Net Worth Growth (Age 31→65)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:300},
+          React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Line,{type:'monotone',dataKey:'etf',name:'ETF',stroke:'var(--gold)',strokeWidth:2,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'nw',name:'NW (Excl. Super)',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+          )
+        )
+      )
+    ),
+    sub==='cashflow'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Annual Net Cash (after life events)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:240},
+          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(ReferenceLine,{y:0,stroke:'var(--red)',strokeDasharray:'4 2'}),
+            React.createElement(Bar,{dataKey:'netCash',name:'Net Cash',radius:[2,2,0,0]},
+              ...rows.map((r,i)=>React.createElement(Cell,{key:i,fill:r.netCash>=0?'var(--green)':'var(--red)'}))
+            )
+          )
+        )
+      ),
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Full Annual Cashflow Table'),
+        React.createElement('div',{className:'table-wrap'},
+          React.createElement('table',{className:'data-table'},
+            React.createElement('thead',null,React.createElement('tr',null,
+              ...['Age','Year','Gross Sal','Net Income','Core','Prop','Veh','Ins','Sav','Child','Mortgage','Life Event','Net Cash','Offset','ETF','Super']
+                .map(h=>React.createElement('th',{key:h},h))
+            )),
+            React.createElement('tbody',null,
+              ...rows.map(r=>React.createElement('tr',{key:r.age},
+                React.createElement('td',{style:{fontWeight:700,color:'var(--gold)'}},r.age),
+                React.createElement('td',null,r.year),
+                React.createElement('td',null,fmtA(r.grossSal)),
+                React.createElement('td',{className:'gold-t'},fmtA(r.totalIncome)),
+                React.createElement('td',null,fmtA(r.core)),
+                React.createElement('td',null,fmtA(r.prop)),
+                React.createElement('td',null,fmtA(r.veh)),
+                React.createElement('td',null,fmtA(r.ins)),
+                React.createElement('td',null,fmtA(r.sav)),
+                React.createElement('td',null,fmtA(r.child)),
+                React.createElement('td',null,fmtA(r.mort)),
+                React.createElement('td',{className:r.lec>0?'neg':''},r.lec>0?fmtA(-r.lec):'—'),
+                React.createElement('td',{className:r.netCash>=0?'pos':'neg'},fmtA(r.netCash)),
+                React.createElement('td',{className:'gold-t'},fmtA(r.offset)),
+                React.createElement('td',null,fmtA(r.etf)),
+                React.createElement('td',null,fmtA(r.superBal))
+              ))
             )
           )
         )
       )
-    )
-  );
-}
-
-const LifeProvider=({children,startingCash})=>{
-  const [D,setD]=useState(()=>{ try{const s=localStorage.getItem('FP_D');if(s)return JSON.parse(s);}catch(e){} return {...LIFE_DEFAULTS,totalCash:startingCash}; });
-  useEffect(()=>{localStorage.setItem('FP_D',JSON.stringify(D));},[D]);
-  return React.createElement(LC.Provider,{value:{D,setD,update:(k,v)=>setD(p=>({...p,[k]:v})),rows:[]}},children);
-}
-const useLife=()=>useContext(LC);
-function LifePlanner({startingCash}){
-  const [page,setPage]=useState(()=>localStorage.getItem('FP_Life_Tab') || 'assumptions');
-  useEffect(()=>localStorage.setItem('FP_Life_Tab', page), [page]);
-  return React.createElement(LifeProvider,{startingCash},
-    React.createElement('nav',{className:'subnav'},
-      React.createElement('button',{className:'subnav-btn'+(page==='assumptions'?' active':''),onClick:()=>setPage('assumptions')},'⚙️ Assumptions'),
-      React.createElement('button',{className:'subnav-btn'+(page==='results'?' active':''),onClick:()=>setPage('results')},'📊 Results')
     ),
-    page==='assumptions'?React.createElement(LifeAssumptions,null):React.createElement(LifeResults,null)
-  );
-}
-const LifeAssumptions=()=>{ return React.createElement('p',null,'(Assumption UI content goes here)'); }
-const fmtA=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
 
-// ── App Wrapper ───────────────────────────────────────────────────────────
-function AppInner(){
-  const [page,setPage]=useState(()=>localStorage.getItem('FP_Main_Page') || 'projection');
-  useEffect(()=>localStorage.setItem('FP_Main_Page', page), [page]);
-  const [menuOpen,setMenuOpen]=useState(false);
-  return React.createElement('div',{className:'app'},
-    React.createElement('header',{className:'topbar'},
-      React.createElement('div',{className:'topbar-inner'},
-        React.createElement('div',{className:'brand'},React.createElement('span',{className:'brand-icon'},'₳'),React.createElement('span',{className:'brand-name'},'FinancePlan 2028')),
-        React.createElement('nav',{className:'desktop-nav'},
-          [{id:'projection',label:'🇦🇺 Projection By 2028'},{id:'life',label:'🏠 Life Plan'}].map(n=>React.createElement('button',{key:n.id,className:'nav-btn'+(page===n.id?' active':''),onClick:()=>setPage(n.id)},n.label))
-        ),
-        React.createElement('button',{onClick:()=>{localStorage.clear();window.location.reload();}, style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)'}},'Logout')
+    sub==='wealth'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Wealth Components Stacked'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:320},
+          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Bar,{dataKey:'offset',name:'Offset',stackId:'a',fill:'var(--blue)'}),
+            React.createElement(Bar,{dataKey:'etf',name:'ETF',stackId:'a',fill:'var(--gold)'}),
+            React.createElement(Bar,{dataKey:'superBal',name:'Super',stackId:'a',fill:'var(--green)'}),
+            D.strategy===3&&React.createElement(Bar,{dataKey:'ipEquity',name:'IP Equity',stackId:'a',fill:'#a78bfa'}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+          )
+        )
       )
     ),
-    React.createElement('main',{className:'main-content'},
-      page==='projection'&&React.createElement(Proj2028,null),
-      page==='life'&&React.createElement(LifePlannerConnected,null)
+
+    sub==='passive'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Passive Income Potential Comparison (3.5% SWR)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:260},
+          React.createElement(LineChart,{data:comparisonData,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Line,{type:'monotone',dataKey:'S1 · 100% Offset',name:'1 · 100% Offset',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'S2 · 50/50 ETF',name:'2 · 50/50 ETF',stroke:'var(--gold)',strokeWidth:2.5,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'S3 · Inv. Property',name:'3 · Inv. Property',stroke:'var(--green)',strokeWidth:2.5,dot:false}),
+            React.createElement(ReferenceLine,{x:60,stroke:'var(--red)',strokeDasharray:'4 2',label:{value:'Age 60',fill:'var(--red)',fontSize:11}}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)',marginTop:'0.5rem'}})
+          )
+        )
+      ),
+      React.createElement('div',{className:'stat-grid'},
+        ...[35,40,45,50,55,60,65].map(age=>React.createElement('div',{key:age,className:'stat-card'+(age===60?' highlight':'')},
+          React.createElement('div',{className:'stat-label'},'Age '+age),
+          React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},fmtA(at(age).passiveIncome)),
+          React.createElement('div',{className:'stat-sub'},'NW: '+fmtA(at(age).nwTotal))
+        ))
+      )
     )
   );
 }
-function App(){ return React.createElement(FinanceProvider,null,React.createElement(AppInner,null)); }
-function initApp(){ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App)); }
-function LifePlannerConnected(){
-  const {compute}=useFinance();
-  const rows=useMemo(()=>compute(),[compute]);
-  const last=rows[rows.length-1];
-  const startingCash=Math.round((last.balA||0)+(last.balB||0));
-  return React.createElement(LifePlanner,{startingCash});
+
+// ── Life Planner Root ─────────────────────────────────────────────────────
+function LifePlanner({startingCash}){
+  const [page,setPage]=useState('assumptions');
+  return React.createElement(LifeProvider,{startingCash},
+    React.createElement('div',null,
+      React.createElement('nav',{className:'subnav',style:{marginBottom:'0'}},
+        React.createElement('button',{className:'subnav-btn'+(page==='assumptions'?' active':''),onClick:()=>setPage('assumptions')},'⚙️ Assumptions'),
+        React.createElement('button',{className:'subnav-btn'+(page==='results'?' active':''),onClick:()=>setPage('results')},'📊 Results')
+      ),
+      React.createElement('div',{style:{marginTop:'1.5rem'}},
+        page==='assumptions'&&React.createElement(LifeAssumptions,null),
+        page==='results'&&React.createElement(LifeResults,null)
+      )
+    )
+  );
 }
-window.onload=()=>{ if(localStorage.getItem('FP_Logged_In')==='true'){ document.getElementById('login-screen').style.display='none'; document.getElementById('app-screen').style.display='block'; initApp(); } };
+
+const fmtA=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
+
 </script>
 </body>
 </html>
