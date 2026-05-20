@@ -454,15 +454,11 @@ function Assumptions({onGo}){
       React.createElement(DateField,{label:'Tuition Payment 2',value:dates.tuit2,onChange:u('dates','tuit2')}),
     )),
 
-    React.createElement(Section,{icon:'💰',title:'Income (weekly after tax)'},
+    React.createElement(Section,{icon:'💰',title:'Your Salary'},
       G(
-        React.createElement(Field,{label:'Your Salary Ph.1 /wk',value:income.yourSalLow,onChange:u('income','yourSalLow'),prefix:true}),
-        React.createElement(Field,{label:'Your Salary Ph.2 /wk',value:income.yourSalHigh,onChange:u('income','yourSalHigh'),prefix:true}),
-        React.createElement(Field,{label:'Wife Salary Ph.1 /wk',value:income.wifeP1,onChange:u('income','wifeP1'),prefix:true}),
-        React.createElement(Field,{label:'Wife Salary Ph.2 /wk',hint:'During masters',value:income.wifeP2,onChange:u('income','wifeP2'),prefix:true}),
-        React.createElement(Field,{label:'Wife Salary Ph.3 /wk',hint:'After PR',value:income.wifeP3,onChange:u('income','wifeP3'),prefix:true}),
+        React.createElement(Field,{label:'Salary at Age 31',value:income.yourSalLow,onChange:u('income','yourSalLow'),prefix:true}),
+        React.createElement(Field,{label:'Salary at Age 32',value:income.yourSalHigh,onChange:u('income','yourSalHigh'),prefix:true}),
         React.createElement(Field,{label:'Your Extra Income /wk',value:income.extraYou,onChange:u('income','extraYou'),prefix:true}),
-        React.createElement(Field,{label:'Wife Freelance /wk',value:income.freelance,onChange:u('income','freelance'),prefix:true}),
       ),
       SL('ADDITIONAL INCOME STREAMS'),
       React.createElement(DynList,{items:extraIncomes,
@@ -476,6 +472,15 @@ function Assumptions({onGo}){
           {key:'toYm',label:'To',type:'date'},
           {key:'weekly',label:'Frequency',type:'select'},
         ]})
+    ),
+
+    React.createElement(Section,{icon:'👩‍💼',title:'Wife Salary'},
+      G(
+        React.createElement(Field,{label:'Wife Salary Ph.1 /wk',value:income.wifeP1,onChange:u('income','wifeP1'),prefix:true}),
+        React.createElement(Field,{label:'Wife Salary Ph.2 /wk',hint:'During masters',value:income.wifeP2,onChange:u('income','wifeP2'),prefix:true}),
+        React.createElement(Field,{label:'Wife Salary Ph.3 /wk',hint:'After PR',value:income.wifeP3,onChange:u('income','wifeP3'),prefix:true}),
+        React.createElement(Field,{label:'Wife Freelance /wk',value:income.freelance,onChange:u('income','freelance'),prefix:true}),
+      )
     ),
 
     React.createElement(Section,{icon:'🏦',title:'Savings Accounts (AUD)'},G(
@@ -515,7 +520,7 @@ function Assumptions({onGo}){
       React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
         React.createElement('p',null,
           'Gap (no CCS): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+(childcare.dailyRate*(1-childcare.discount)).toFixed(2)+'/day'),
-          '  ·  Gap (with CCS): ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+(childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate)).toFixed(2)+'/day')
+          '  ·  Gap (with CCS): ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+(childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate)).toFixed(2)+'/day')
         )
       )
     ),
@@ -842,7 +847,9 @@ const SUBNAV=[{id:'summary',label:'📊 Summary'},{id:'cashflow',label:'💵 Cas
 
 function Results(){
   const {compute,nepalCalc}=useFinance();
-  const [sub,setSub]=useState('summary');
+  const [sub,setSub]=useState(()=>localStorage.getItem('FP_Proj_Res_Tab') || 'summary');
+  useEffect(()=>localStorage.setItem('FP_Proj_Res_Tab', sub), [sub]);
+
   const rows=useMemo(()=>compute(),[compute]);
   const nepal=useMemo(()=>nepalCalc(),[nepalCalc]);
   return React.createElement('div',null,
@@ -858,11 +865,29 @@ function Results(){
   );
 }
 
+function Projection2028() {
+  const [subPage, setSubPage] = useState(() => localStorage.getItem('FP_Proj_Tab') || 'assumptions');
+  useEffect(() => localStorage.setItem('FP_Proj_Tab', subPage), [subPage]);
+
+  return React.createElement('div', null,
+    React.createElement('nav', {className:'subnav', style:{marginBottom:'0'}},
+      React.createElement('button', {className:'subnav-btn'+(subPage==='assumptions'?' active':''), onClick:()=>setSubPage('assumptions')}, '⚙️ Assumptions'),
+      React.createElement('button', {className:'subnav-btn'+(subPage==='results'?' active':''), onClick:()=>setSubPage('results')}, '📊 Results')
+    ),
+    React.createElement('div', {style:{marginTop:'1.5rem'}},
+      subPage === 'assumptions' && React.createElement(Assumptions, {onGo: () => setSubPage('results')}),
+      subPage === 'results' && React.createElement(Results, null)
+    )
+  );
+}
+
 // ── App root ──────────────────────────────────────────────────────────────
-const NAV=[{id:'assumptions',label:'🇦🇺 Family Plan'},{id:'results',label:'📊 Family Results'},{id:'life',label:'🏠 Life Plan'}];
+const NAV=[{id:'projection',label:'🇦🇺 Projection By 2028'},{id:'life',label:'🏠 Life Plan'}];
 
 function AppInner(){
-  const [page,setPage]=useState('assumptions');
+  const [page,setPage]=useState(()=>localStorage.getItem('FP_Main_Page') || 'projection');
+  useEffect(()=>localStorage.setItem('FP_Main_Page', page), [page]);
+  
   const [menuOpen,setMenuOpen]=useState(false);
 
   return React.createElement('div',{className:'app'},
@@ -883,6 +908,12 @@ function AppInner(){
           ),
           React.createElement('button',{onClick:()=>{
               localStorage.removeItem('FP_Logged_In');
+              localStorage.removeItem('FP_Main_Page');
+              localStorage.removeItem('FP_Proj_Tab');
+              localStorage.removeItem('FP_Proj_Res_Tab');
+              localStorage.removeItem('FP_Life_Tab');
+              localStorage.removeItem('FP_Life_Assump_Tab');
+              localStorage.removeItem('FP_Life_Res_Tab');
               window.location.reload();
             },
             style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',
@@ -895,8 +926,7 @@ function AppInner(){
       )
     ),
     React.createElement('main',{className:'main-content'},
-      page==='assumptions'&&React.createElement(Assumptions,{onGo:()=>setPage('results')}),
-      page==='results'&&React.createElement(Results,null),
+      page==='projection'&&React.createElement(Projection2028,null),
       page==='life'&&React.createElement(LifePlannerConnected,null)
     )
   );
@@ -1291,7 +1321,8 @@ function ExtraRecRow({row,onUpdate,onRemove,cpiOption}){
 // ── Life Assumptions Page ─────────────────────────────────────────────────
 function LifeAssumptions(){
   const {D,setD,update,rows}=useLife();
-  const [sub,setSub]=useState('position');
+  const [sub,setSub]=useState(()=>localStorage.getItem('FP_Life_Assump_Tab') || 'position');
+  useEffect(()=>localStorage.setItem('FP_Life_Assump_Tab', sub), [sub]);
 
   const SUBS=[
     {id:'position',label:'🏠 Position'},
@@ -1308,18 +1339,6 @@ function LifeAssumptions(){
       React.createElement('div',null,
         React.createElement('h1',{className:'page-title'},'Life Financial Planner'),
         React.createElement('p',{className:'page-subtitle'},'35-year model: Age 31→65. Change any value, results update instantly.')
-      ),
-      React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
-        React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--text2)'}},'Strategy:'),
-        ...[{v:1,l:'1 · 100% Offset'},{v:2,l:'2 · 50/50 ETF'},{v:3,l:'3 · Inv. Property'}].map(s=>
-          React.createElement('button',{key:s.v,
-            style:{padding:'.35rem .8rem',borderRadius:'var(--radius-sm)',border:'1px solid',
-              borderColor:D.strategy===s.v?'var(--gold-dim)':'var(--border)',
-              background:D.strategy===s.v?'var(--gold-glow)':'transparent',
-              color:D.strategy===s.v?'var(--gold)':'var(--text2)',
-              cursor:'pointer',fontSize:'var(--t-xs)',fontFamily:"'Syne',sans-serif",fontWeight:600},
-            onClick:()=>update('strategy',s.v)},s.l)
-        )
       )
     ),
 
@@ -1538,7 +1557,9 @@ function LifeAssumptions(){
 // ── Life Results Page ─────────────────────────────────────────────────────
 function LifeResults(){
   const {rows,D,update}=useLife();
-  const [sub,setSub]=useState('summary');
+  const [sub,setSub]=useState(()=>localStorage.getItem('FP_Life_Res_Tab') || 'summary');
+  useEffect(()=>localStorage.setItem('FP_Life_Res_Tab', sub), [sub]);
+
   const SUBS=[
     {id:'summary',label:'📊 Milestones'},
     {id:'cashflow',label:'💵 Cashflow'},
@@ -1734,7 +1755,9 @@ function LifeResults(){
 
 // ── Life Planner Root ─────────────────────────────────────────────────────
 function LifePlanner({startingCash}){
-  const [page,setPage]=useState('assumptions');
+  const [page,setPage]=useState(()=>localStorage.getItem('FP_Life_Tab') || 'assumptions');
+  useEffect(()=>localStorage.setItem('FP_Life_Tab', page), [page]);
+
   return React.createElement(LifeProvider,{startingCash},
     React.createElement('div',null,
       React.createElement('nav',{className:'subnav',style:{marginBottom:'0'}},
