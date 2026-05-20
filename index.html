@@ -951,7 +951,7 @@ function LifePlannerConnected(){
 
 
 // ═══════════════════════════════════════════════════════════════
-// LIFE FINANCIAL PLANNER — v7 Dynamic
+// LIFE FINANCIAL PLANNER — v7 Dynamic (FIXED OFFSET LOGIC)
 // ═══════════════════════════════════════════════════════════════
 
 const LIFE_DEFAULTS = {
@@ -1161,36 +1161,55 @@ function computeLife(D) {
     const lec = lecMap[age]||0;
     const netCash = grossSurplus - lec;
 
-    // Balance updates
+    let interestPaid = 0;
+    let principalPaid = 0;
+
+    // UPDATED Balance logic
     if (D.strategy===1) {
-      // All surplus to offset
-      if (remainLoan>0) {
+      if (remainLoan > 0) {
+        const netDebt = Math.max(0, remainLoan - offset);
+        interestPaid = netDebt * D.mortgageRate;
+        principalPaid = mort - interestPaid;
+        
+        remainLoan = Math.max(0, remainLoan - principalPaid);
         offset += netCash;
-        // Principal reduction
-        const interest = remainLoan*D.mortgageRate;
-        const principal = mort - interest;
-        remainLoan = Math.max(0, remainLoan - principal);
-        if (offset > remainLoan) { remainLoan=0; offset -= remainLoan; }
+        
+        if (offset > remainLoan) {
+          const overflow = offset - remainLoan;
+          offset = remainLoan; 
+          etf += overflow;     
+        }
       } else {
         etf += netCash;
       }
     } else if (D.strategy===2) {
-      // 50/50
       const half = netCash/2;
       offset += half;
       etf = (etf+half)*(1+etfNet);
-      const interest = remainLoan*D.mortgageRate;
-      const principal = mort - interest;
-      remainLoan = Math.max(0, remainLoan - principal);
+      
+      const netDebt = Math.max(0, remainLoan - offset);
+      interestPaid = netDebt * D.mortgageRate;
+      principalPaid = mort - interestPaid;
+      remainLoan = Math.max(0, remainLoan - principalPaid);
+      
+      if (offset > remainLoan) {
+        etf += (offset - remainLoan);
+        offset = remainLoan;
+      }
     } else {
-      // Strategy 3 - IP
       offset += netCash;
-      const interest = remainLoan*D.mortgageRate;
-      const principal = mort - interest;
-      remainLoan = Math.max(0, remainLoan - principal);
+      
+      const netDebt = Math.max(0, remainLoan - offset);
+      interestPaid = netDebt * D.mortgageRate;
+      principalPaid = mort - interestPaid;
+      remainLoan = Math.max(0, remainLoan - principalPaid);
+      
+      if (offset > remainLoan) {
+        etf += (offset - remainLoan);
+        offset = remainLoan;
+      }
     }
 
-    // ETF growth on existing balance (S1: after debt-free)
     if (D.strategy!==2) etf *= (1+etfNet);
 
     // Super
@@ -1204,7 +1223,7 @@ function computeLife(D) {
     const passiveIncome = etf*D.etfSWR + (age>=D.preservationAge ? superBal*D.superSWR : 0);
 
     rows.push({age,year,grossSal: grossSal+wifeGrossSal,netEach: netYou+netWife,totalIncome,core,prop,veh,ins,sav,child,extraExp,
-      mort,ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
+      mort, interestPaid, principalPaid, ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
       remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome});
   }
   return rows;
@@ -1677,25 +1696,21 @@ function LifeResults(){
         React.createElement('div',{className:'table-wrap'},
           React.createElement('table',{className:'data-table'},
             React.createElement('thead',null,React.createElement('tr',null,
-              ...['Age','Year','Gross Sal','Net Income','Core','Prop','Veh','Ins','Sav','Child','Mortgage','Life Event','Net Cash','Offset','ETF','Super']
+              ...['Age','Year','Net Income','Repayment','Interest','Principal','Life Event','Net Cash','Offset','Loan Bal','ETF','Super']
                 .map(h=>React.createElement('th',{key:h},h))
             )),
             React.createElement('tbody',null,
               ...rows.map(r=>React.createElement('tr',{key:r.age},
                 React.createElement('td',{style:{fontWeight:700,color:'var(--gold)'}},r.age),
                 React.createElement('td',null,r.year),
-                React.createElement('td',null,fmtA(r.grossSal)),
                 React.createElement('td',{className:'gold-t'},fmtA(r.totalIncome)),
-                React.createElement('td',null,fmtA(r.core)),
-                React.createElement('td',null,fmtA(r.prop)),
-                React.createElement('td',null,fmtA(r.veh)),
-                React.createElement('td',null,fmtA(r.ins)),
-                React.createElement('td',null,fmtA(r.sav)),
-                React.createElement('td',null,fmtA(r.child)),
                 React.createElement('td',null,fmtA(r.mort)),
+                React.createElement('td',{style:{color:'var(--red)'}},fmtA(r.interestPaid)),
+                React.createElement('td',{style:{color:'var(--green)'}},fmtA(r.principalPaid)),
                 React.createElement('td',{className:r.lec>0?'neg':''},r.lec>0?fmtA(-r.lec):'—'),
                 React.createElement('td',{className:r.netCash>=0?'pos':'neg'},fmtA(r.netCash)),
                 React.createElement('td',{className:'gold-t'},fmtA(r.offset)),
+                React.createElement('td',{style:{color:'var(--red)', fontWeight:600}},fmtA(r.remainLoan)),
                 React.createElement('td',null,fmtA(r.etf)),
                 React.createElement('td',null,fmtA(r.superBal))
               ))
