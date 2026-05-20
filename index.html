@@ -1776,7 +1776,7 @@ function LifeResults(){
       )
     ),
 
-    sub==='wealth'&&React.createElement('div',null,
+sub==='wealth'&&React.createElement('div',null,
       React.createElement('div',{className:'chart-card'},
         React.createElement('div',{className:'chart-title'},'Wealth Components Stacked'),
         React.createElement(ResponsiveContainer,{width:'100%',height:320},
@@ -1784,8 +1784,29 @@ function LifeResults(){
             React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
             React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
             React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
-            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(Bar,{dataKey:'offset',name:'Offset',stackId:'a',fill:'var(--blue)'}),
+            
+            // Updated Custom Tooltip
+            React.createElement(Tooltip, {
+              content: ({active, payload, label}) => {
+                if (!active || !payload?.length) return null;
+                const row = payload[0].payload;
+                // Calculating true totals based on your nwTotal formula
+                const totalIncl = row.nwTotal;
+                const totalExcl = row.nwTotal - row.superBal;
+                
+                return React.createElement('div',{style:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.6rem .9rem',fontSize:'var(--t-xs)'}},
+                  React.createElement('p',{style:{color:'var(--gold)',fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:'.3rem'}}, 'Age ' + label),
+                  ...payload.map(p=>React.createElement('p',{key:p.dataKey,style:{color:p.color}}, p.name+': '+fmtA(p.value))),
+                  React.createElement('div', {style:{marginTop:'.4rem', paddingTop:'.4rem', borderTop:'1px solid var(--border2)'}},
+                    React.createElement('p',{style:{color:'var(--text)',fontWeight:600}}, 'Total (excl. Super): '+fmtA(totalExcl)),
+                    React.createElement('p',{style:{color:'var(--text)',fontWeight:600}}, 'Total (incl. Super): '+fmtA(totalIncl))
+                  )
+                );
+              }
+            }),
+
+            // Removed offset, added PPOR
+            React.createElement(Bar,{dataKey:'pporVal',name:'PPOR Value',stackId:'a',fill:'var(--blue)'}),
             React.createElement(Bar,{dataKey:'etf',name:'ETF',stackId:'a',fill:'var(--gold)'}),
             React.createElement(Bar,{dataKey:'superBal',name:'Super',stackId:'a',fill:'var(--green)'}),
             D.strategy===3&&React.createElement(Bar,{dataKey:'ipEquity',name:'IP Equity',stackId:'a',fill:'#a78bfa'}),
