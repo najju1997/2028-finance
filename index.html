@@ -160,31 +160,10 @@ select.input-field{appearance:auto}
 </div>
 <div id="app-screen"><div id="root"></div></div>
 <script>
-var _pwVisible = false;
-function togglePw() {
-  var inp = document.getElementById('inp-pass');
-  var btn = document.getElementById('pw-btn');
-  _pwVisible = !_pwVisible;
-  inp.type = _pwVisible ? 'text' : 'password';
-  btn.textContent = _pwVisible ? 'Hide' : 'Show';
-}
-function doLogin() {
-  var u = document.getElementById('inp-user').value.trim();
-  var p = document.getElementById('inp-pass').value;
-  var err = document.getElementById('login-err');
-  err.textContent = '';
-  if (u === 'ujjan' && p === 'AbCd@1949') {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    if (!window._appMounted) initApp();
-  } else {
-    err.textContent = 'Invalid username or password';
-  }
-}
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('inp-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('inp-user').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('inp-pass').focus(); });
-});
+var _pwVisible=false;
+function togglePw(){var i=document.getElementById('inp-pass'),b=document.getElementById('pw-btn');_pwVisible=!_pwVisible;i.type=_pwVisible?'text':'password';b.textContent=_pwVisible?'Hide':'Show';}
+function doLogin(){var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');err.textContent='';if(u==='ujjan'&&p==='AbCd@1949'){document.getElementById('login-screen').style.display='none';document.getElementById('app-screen').style.display='block';if(!window._appMounted)initApp();}else{err.textContent='Invalid username or password';}}
+document.addEventListener('DOMContentLoaded',function(){document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});});
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -969,10 +948,11 @@ function initApp(){window._appMounted=true;ReactDOM.createRoot(document.getEleme
 
 // Connects Family Plan Jul-28 balance → Life Plan starting cash
 function LifePlannerConnected(){
-  const {compute}=useFinance();
+  const {compute,nepalCalc}=useFinance();
   const rows=useMemo(()=>compute(),[compute]);
+  const nepal=useMemo(()=>nepalCalc(),[nepalCalc]);
   const last=rows[rows.length-1];
-  const startingCash=Math.round((last.balA||0)+(last.balB||0));
+  const startingCash=Math.round((last.balA||0)+(last.balB||0)+(nepal.totalAUD||0));
   return React.createElement(LifePlanner,{startingCash});
 }
 
