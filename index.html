@@ -391,6 +391,12 @@ function DynFieldCell({label,value,prefix,onCommit}){
 function DynRowItem({row,onUpdate,onRemove,fields}){
   return React.createElement('div',{className:'dyn-row'},
     ...fields.map(f=>{
+      // FIX: Explicitly handle text type fields so they don't get filtered out by parseFloat
+      if(f.type==='text') return React.createElement('div',{key:f.key,className:'input-group'},
+        React.createElement('label',{className:'input-label'},f.label),
+        React.createElement('input',{type:'text',className:'input-field',value:row[f.key]||'',
+          onChange:e=>onUpdate(f.key,e.target.value)})
+      );
       if(f.type==='date') return React.createElement('div',{key:f.key,className:'input-group'},
         React.createElement('label',{className:'input-label'},f.label),
         React.createElement('input',{type:'month',className:'input-field',
@@ -466,7 +472,7 @@ function Assumptions({onGo}){
         addLabel:'Add Income Stream',
         newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
         fields:[
-          {key:'label',label:'Label'},
+          {key:'label',label:'Label',type:'text'}, // FIX: Set type to text so labels save correctly
           {key:'amount',label:'Amount',prefix:true},
           {key:'fromYm',label:'From',type:'date'},
           {key:'toYm',label:'To',type:'date'},
@@ -502,7 +508,7 @@ function Assumptions({onGo}){
         addLabel:'Add Expense',
         newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
         fields:[
-          {key:'label',label:'Label'},
+          {key:'label',label:'Label',type:'text'}, // FIX: Set type to text
           {key:'amount',label:'Amount',prefix:true},
           {key:'fromYm',label:'From',type:'date'},
           {key:'toYm',label:'To',type:'date'},
@@ -592,7 +598,7 @@ function Assumptions({onGo}){
         addLabel:'Add One-Off Cost',
         newItem:{label:'',amount:0,ym:202607,buffer:10},
         fields:[
-          {key:'label',label:'Description'},
+          {key:'label',label:'Description',type:'text'}, // FIX: Set type to text
           {key:'amount',label:'Amount',prefix:true},
           {key:'ym',label:'Month',type:'date'},
           {key:'buffer',label:'Buffer %'},
@@ -951,7 +957,7 @@ function LifePlannerConnected(){
 
 
 // ═══════════════════════════════════════════════════════════════
-// LIFE FINANCIAL PLANNER — v7 Dynamic (FIXED OFFSET LOGIC)
+// LIFE FINANCIAL PLANNER — v7 Dynamic (FIXED TABS & LABELS)
 // ═══════════════════════════════════════════════════════════════
 
 const LIFE_DEFAULTS = {
@@ -1156,9 +1162,13 @@ function computeLife(D) {
       ipEquity = ipVal - ipLoan;
     }
 
-    const totalOut = core+prop+veh+ins+sav+child+mort+ipTopup+extraExp;
+    const livingExpenses = core+prop+veh+ins+sav+child+extraExp;
+    const totalOut = livingExpenses + mort + ipTopup;
     const grossSurplus = totalIncome - totalOut;
     const lec = lecMap[age]||0;
+    
+    // Operating Cash before any mortgage payments or investments are made
+    const preMortgageCash = totalIncome - livingExpenses - lec;
     const netCash = grossSurplus - lec;
 
     let interestPaid = 0;
@@ -1222,9 +1232,10 @@ function computeLife(D) {
     const nwTotal = Math.max(0,offset) + etf + superBal + pporVal - remainLoan + ipEquity;
     const passiveIncome = etf*D.etfSWR + (age>=D.preservationAge ? superBal*D.superSWR : 0);
 
+    // Ensure we expose all values so they can be charted/tabled easily
     rows.push({age,year,grossSal: grossSal+wifeGrossSal,netEach: netYou+netWife,totalIncome,core,prop,veh,ins,sav,child,extraExp,
       mort, interestPaid, principalPaid, ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
-      remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome});
+      remainLoan,etf,superBal,pporVal,ipVal,ipLoan,ipEquity,nw,nwTotal,passiveIncome, livingExpenses, preMortgageCash});
   }
   return rows;
 }
@@ -1577,6 +1588,7 @@ function LifeAssumptions(){
 function LifeResults(){
   const {rows,D,update}=useLife();
   const [sub,setSub]=useState(()=>localStorage.getItem('FP_Life_Res_Tab') || 'summary');
+  const [cfTab,setCfTab] = useState('flow'); // New State for nested Cashflow tabs
   const [selectedAge, setSelectedAge] = useState(60); // Default Age Selection
   
   useEffect(()=>localStorage.setItem('FP_Life_Res_Tab', sub), [sub]);
@@ -1663,131 +1675,4 @@ function LifeResults(){
         React.createElement('div',{className:'chart-title'},'Net Worth Growth (Age 31→65)'),
         React.createElement(ResponsiveContainer,{width:'100%',height:300},
           React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
-            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
-            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
-            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
-            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(Line,{type:'monotone',dataKey:'etf',name:'ETF',stroke:'var(--gold)',strokeWidth:2,dot:false}),
-            React.createElement(Line,{type:'monotone',dataKey:'nw',name:'NW (Excl. Super)',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
-            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
-          )
-        )
-      )
-    ),
-
-    sub==='cashflow'&&React.createElement('div',null,
-      React.createElement('div',{className:'chart-card'},
-        React.createElement('div',{className:'chart-title'},'Annual Net Cash (after life events)'),
-        React.createElement(ResponsiveContainer,{width:'100%',height:240},
-          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
-            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
-            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
-            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
-            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(ReferenceLine,{y:0,stroke:'var(--red)',strokeDasharray:'4 2'}),
-            React.createElement(Bar,{dataKey:'netCash',name:'Net Cash',radius:[2,2,0,0]},
-              ...rows.map((r,i)=>React.createElement(Cell,{key:i,fill:r.netCash>=0?'var(--green)':'var(--red)'}))
-            )
-          )
-        )
-      ),
-      React.createElement('div',{className:'chart-card'},
-        React.createElement('div',{className:'chart-title'},'Full Annual Cashflow Table'),
-        React.createElement('div',{className:'table-wrap'},
-          React.createElement('table',{className:'data-table'},
-            React.createElement('thead',null,React.createElement('tr',null,
-              ...['Age','Year','Net Income','Repayment','Interest','Principal','Life Event','Net Cash','Offset','Loan Bal','ETF','Super']
-                .map(h=>React.createElement('th',{key:h},h))
-            )),
-            React.createElement('tbody',null,
-              ...rows.map(r=>React.createElement('tr',{key:r.age},
-                React.createElement('td',{style:{fontWeight:700,color:'var(--gold)'}},r.age),
-                React.createElement('td',null,r.year),
-                React.createElement('td',{className:'gold-t'},fmtA(r.totalIncome)),
-                React.createElement('td',null,fmtA(r.mort)),
-                React.createElement('td',{style:{color:'var(--red)'}},fmtA(r.interestPaid)),
-                React.createElement('td',{style:{color:'var(--green)'}},fmtA(r.principalPaid)),
-                React.createElement('td',{className:r.lec>0?'neg':''},r.lec>0?fmtA(-r.lec):'—'),
-                React.createElement('td',{className:r.netCash>=0?'pos':'neg'},fmtA(r.netCash)),
-                React.createElement('td',{className:'gold-t'},fmtA(r.offset)),
-                React.createElement('td',{style:{color:'var(--red)', fontWeight:600}},fmtA(r.remainLoan)),
-                React.createElement('td',null,fmtA(r.etf)),
-                React.createElement('td',null,fmtA(r.superBal))
-              ))
-            )
-          )
-        )
-      )
-    ),
-
-    sub==='wealth'&&React.createElement('div',null,
-      React.createElement('div',{className:'chart-card'},
-        React.createElement('div',{className:'chart-title'},'Wealth Components Stacked'),
-        React.createElement(ResponsiveContainer,{width:'100%',height:320},
-          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
-            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
-            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
-            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
-            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(Bar,{dataKey:'offset',name:'Offset',stackId:'a',fill:'var(--blue)'}),
-            React.createElement(Bar,{dataKey:'etf',name:'ETF',stackId:'a',fill:'var(--gold)'}),
-            React.createElement(Bar,{dataKey:'superBal',name:'Super',stackId:'a',fill:'var(--green)'}),
-            D.strategy===3&&React.createElement(Bar,{dataKey:'ipEquity',name:'IP Equity',stackId:'a',fill:'#a78bfa'}),
-            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
-          )
-        )
-      )
-    ),
-
-    sub==='passive'&&React.createElement('div',null,
-      React.createElement('div',{className:'chart-card'},
-        React.createElement('div',{className:'chart-title'},'Passive Income Potential Comparison (3.5% SWR)'),
-        React.createElement(ResponsiveContainer,{width:'100%',height:260},
-          React.createElement(LineChart,{data:comparisonData,margin:{top:8,right:16,bottom:0,left:8}},
-            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
-            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
-            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
-            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
-            React.createElement(Line,{type:'monotone',dataKey:'S1 · 100% Offset',name:'1 · 100% Offset',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
-            React.createElement(Line,{type:'monotone',dataKey:'S2 · 50/50 ETF',name:'2 · 50/50 ETF',stroke:'var(--gold)',strokeWidth:2.5,dot:false}),
-            React.createElement(Line,{type:'monotone',dataKey:'S3 · Inv. Property',name:'3 · Inv. Property',stroke:'var(--green)',strokeWidth:2.5,dot:false}),
-            React.createElement(ReferenceLine,{x:60,stroke:'var(--red)',strokeDasharray:'4 2',label:{value:'Age 60',fill:'var(--red)',fontSize:11}}),
-            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)',marginTop:'0.5rem'}})
-          )
-        )
-      ),
-      React.createElement('div',{className:'stat-grid'},
-        ...[35,40,45,50,55,60,65].map(age=>React.createElement('div',{key:age,className:'stat-card'+(age===60?' highlight':'')},
-          React.createElement('div',{className:'stat-label'},'Age '+age),
-          React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},fmtA(at(age).passiveIncome)),
-          React.createElement('div',{className:'stat-sub'},'NW: '+fmtA(at(age).nwTotal))
-        ))
-      )
-    )
-  );
-}
-
-// ── Life Planner Root ─────────────────────────────────────────────────────
-function LifePlanner({startingCash}){
-  const [page,setPage]=useState(()=>localStorage.getItem('FP_Life_Tab') || 'assumptions');
-  useEffect(()=>localStorage.setItem('FP_Life_Tab', page), [page]);
-
-  return React.createElement(LifeProvider,{startingCash},
-    React.createElement('div',null,
-      React.createElement('nav',{className:'subnav',style:{marginBottom:'0'}},
-        React.createElement('button',{className:'subnav-btn'+(page==='assumptions'?' active':''),onClick:()=>setPage('assumptions')},'⚙️ Assumptions'),
-        React.createElement('button',{className:'subnav-btn'+(page==='results'?' active':''),onClick:()=>setPage('results')},'📊 Results')
-      ),
-      React.createElement('div',{style:{marginTop:'1.5rem'}},
-        page==='assumptions'&&React.createElement(LifeAssumptions,null),
-        page==='results'&&React.createElement(LifeResults,null)
-      )
-    )
-  );
-}
-
-const fmtA=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
-
-</script>
-</body>
-</html>
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--
