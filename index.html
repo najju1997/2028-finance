@@ -1678,6 +1678,7 @@ function LifeResults(){
           React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
             React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
             React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+                              React.createElement(Line,{type:'monotone',dataKey:'pporVal',name:'PPOR Value',stroke:'var(--green)',strokeWidth:2,dot:false}),
             React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
             React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
             React.createElement(Line,{type:'monotone',dataKey:'etf',name:'ETF',stroke:'var(--gold)',strokeWidth:2,dot:false}),
