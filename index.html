@@ -1643,7 +1643,7 @@ function LifeResults(){
     sub==='summary'&&React.createElement('div',null,
       // Age Selection Tab
       React.createElement('div',{className:'subnav', style:{borderBottom:'none', marginBottom:'1rem'}},
-         [55, 60].map(a => React.createElement('button', {
+         [40, 45, 50, 55, 60, 65].map(a => React.createElement('button', {
            key: a,
            className: 'subnav-btn' + (selectedAge === a ? ' active' : ''),
            onClick: () => setSelectedAge(a)
@@ -1651,9 +1651,10 @@ function LifeResults(){
       ),
       React.createElement('div',{className:'stat-grid'},
         React.createElement('div',{className:'stat-card highlight'},
-          React.createElement('div',{className:'stat-label'},'Net Worth (Excl. Super) at Age ' + selectedAge),
-          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.nw)),
-          React.createElement('div',{className:'stat-sub'},'PPOR + ETF + Offset')
+          React.createElement('div',{className:'stat-label'},'Net Worth (Excl. Super & Offset) at Age ' + selectedAge),
+          // NW calculation updated: Total NW minus Super minus Offset (leaves PPOR Equity + ETF + IP Equity)
+          React.createElement('div',{className:'stat-value'},fmtA(currentAgeData.nwTotal - currentAgeData.superBal - currentAgeData.offset)),
+          React.createElement('div',{className:'stat-sub'},'PPOR Equity + ETF' + (D.strategy===3 ? ' + IP Equity' : ''))
         ),
         React.createElement('div',{className:'stat-card'},
           React.createElement('div',{className:'stat-label'},'PPOR Value'),
@@ -1671,6 +1672,21 @@ function LifeResults(){
           React.createElement('div',{className:'stat-sub'},'Combined Superannuation')
         )
       ),
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Net Worth Growth (Age 31→65)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:300},
+          React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Line,{type:'monotone',dataKey:'etf',name:'ETF',stroke:'var(--gold)',strokeWidth:2,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'nw',name:'NW (Excl. Super)',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+          )
+        )
+      )
+    ),
       React.createElement('div',{className:'chart-card'},
         React.createElement('div',{className:'chart-title'},'Net Worth Growth (Age 31→65)'),
         React.createElement(ResponsiveContainer,{width:'100%',height:300},
