@@ -17,25 +17,6 @@
 --radius:.75rem;--radius-sm:.4rem;
 }
 body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
-/* LOGIN */
-#login-screen{display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)}
-.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem 2rem;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.5)}
-.login-logo{text-align:center;margin-bottom:1.75rem}
-.login-logo .logo-icon{font-size:2.5rem;color:var(--gold)}
-.login-logo h1{font-family:'Syne',sans-serif;font-size:var(--t-xl);font-weight:800;color:var(--text);margin:.25rem 0 0}
-.login-logo p{font-size:var(--t-xs);color:var(--text3);margin-top:.2rem}
-.login-form{display:flex;flex-direction:column;gap:.9rem}
-.login-label{display:block;font-size:var(--t-xs);font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
-.login-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:var(--t-base);padding:.55rem .75rem}
-.login-input:focus{outline:none;border-color:var(--gold-dim)}
-.pw-wrap{position:relative}
-.pw-wrap .login-input{padding-right:2.8rem}
-.pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:var(--t-md);line-height:1;padding:0}
-.login-err{color:var(--red);font-size:var(--t-xs);text-align:center;min-height:1.2em}
-.login-btn{background:var(--gold);color:#0b0e14;border:none;border-radius:var(--radius-sm);padding:.8rem;font-family:'Syne',sans-serif;font-weight:700;font-size:var(--t-md);cursor:pointer;letter-spacing:.04em;width:100%;margin-top:.25rem}
-.login-btn:hover{background:#e8bc55}
-/* APP */
-#app-screen{display:none}
 .app{display:flex;flex-direction:column;min-height:100vh}
 .topbar{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
 .topbar-inner{max-width:1400px;margin:0 auto;padding:.75rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem}
@@ -52,7 +33,6 @@ body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--b
 .mobile-menu{padding:.5rem clamp(1rem,4vw,2rem) 1rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.25rem}
 .mobile-nav-btn{font-family:'Syne',sans-serif;font-size:var(--t-md);font-weight:600;padding:.75rem 1rem;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text2);cursor:pointer;text-align:left}
 .mobile-nav-btn.active{color:var(--gold);background:var(--gold-glow)}
-.logout-btn{background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:var(--t-xs);padding:.3rem .6rem;border-radius:var(--radius-sm)}
 .main-content{flex:1;max-width:1400px;margin:0 auto;width:100%;padding:clamp(1.5rem,4vw,2.5rem) clamp(1rem,4vw,2rem)}
 .page-title{font-family:'Syne',sans-serif;font-size:var(--t-2xl);font-weight:800;margin-bottom:.4rem;line-height:1.1}
 .page-subtitle{font-size:var(--t-sm);color:var(--text2);margin-bottom:2rem}
@@ -73,7 +53,6 @@ body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--b
 .input-field{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:var(--t-base);padding:.5rem .75rem;width:100%;transition:border-color .2s}
 .input-field:focus{outline:none;border-color:var(--gold-dim)}
 .input-field.has-prefix{padding-left:calc(.75rem*2 + .8em)}
-select.input-field{appearance:auto}
 .info-box{padding:.6rem 1rem;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid var(--gold);margin-top:.75rem}
 .info-box p{font-size:var(--t-xs);color:var(--text2)}
 .cta-row{display:flex;justify-content:flex-end;margin-top:2rem}
@@ -112,6 +91,39 @@ select.input-field{appearance:auto}
 .nc-label{font-size:var(--t-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
 .nc-nrs{font-family:'Syne',sans-serif;font-size:var(--t-lg);font-weight:700}
 .nc-aud{font-size:var(--t-sm);color:var(--gold);margin-top:.2rem}
+@media(max-width:768px){.desktop-nav{display:none}.hamburger{display:flex}.input-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stat-grid{grid-template-columns:1fr}.subnav-btn{font-size:var(--t-xs);padding:.35rem .6rem}.tl-month{min-width:4rem}}
+
+/* Dynamic list rows */
+.dyn-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:.75rem;padding:.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:.5rem;align-items:end}
+.btn-add{background:transparent;border:1px dashed var(--border2);color:var(--text2);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;width:100%;margin-top:.5rem;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-add:hover{border-color:var(--gold-dim);color:var(--gold)}
+.btn-remove{background:transparent;border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:.4rem .75rem;font-size:var(--t-xs);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-remove:hover{background:var(--red);color:#fff}
+.btn-fetch{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-fetch:hover{border-color:var(--gold-dim);color:var(--gold)}
+.btn-fetch:disabled{opacity:.5;cursor:not-allowed}
+select.input-field{appearance:auto}
+
+/* LOGIN */
+#login-screen{display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)}
+#app-screen{display:none}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem 2rem;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.login-logo{text-align:center;margin-bottom:1.75rem}
+.login-logo .logo-icon{font-size:2.5rem;color:var(--gold)}
+.login-logo h1{font-family:'Syne',sans-serif;font-size:var(--t-xl);font-weight:800;color:var(--text);margin:.25rem 0 0}
+.login-logo p{font-size:var(--t-xs);color:var(--text3);margin-top:.2rem}
+.login-form{display:flex;flex-direction:column;gap:.9rem}
+.login-label{display:block;font-size:var(--t-xs);font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
+.login-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:var(--t-base);padding:.55rem .75rem}
+.login-input:focus{outline:none;border-color:var(--gold-dim)}
+.pw-wrap{position:relative}
+.pw-wrap .login-input{padding-right:2.8rem}
+.pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:var(--t-md);line-height:1;padding:0}
+.login-err{color:var(--red);font-size:var(--t-xs);text-align:center;min-height:1.2em}
+.login-btn{background:var(--gold);color:#0b0e14;border:none;border-radius:var(--radius-sm);padding:.8rem;font-family:'Syne',sans-serif;font-weight:700;font-size:var(--t-md);cursor:pointer;letter-spacing:.04em;width:100%;margin-top:.25rem}
+.login-btn:hover{background:#e8bc55}
+/* Dynamic rows */
 .dyn-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr));gap:.75rem;padding:.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:.5rem;align-items:end}
 .btn-add{background:transparent;border:1px dashed var(--border2);color:var(--text2);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;width:100%;margin-top:.5rem;transition:all .2s;font-family:'DM Sans',sans-serif}
 .btn-add:hover{border-color:var(--gold-dim);color:var(--gold)}
@@ -120,19 +132,17 @@ select.input-field{appearance:auto}
 .btn-fetch{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:var(--t-sm);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
 .btn-fetch:hover:not(:disabled){border-color:var(--gold-dim);color:var(--gold)}
 .btn-fetch:disabled{opacity:.5;cursor:not-allowed}
-@media(max-width:768px){.desktop-nav{display:none}.hamburger{display:flex}.input-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.stat-grid{grid-template-columns:1fr}.subnav-btn{font-size:var(--t-xs);padding:.35rem .6rem}.tl-month{min-width:4rem}}
+select.input-field{appearance:auto}
 </style>
 </head>
 <body>
 
-<!-- LOGIN (plain HTML, no React needed) -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
       <div class="logo-icon">&#8371;</div>
       <h1>FinancePlan</h1>
-      <p>2028 Family Wealth Planner</p>
+      <p>Family &amp; Life Wealth Planner</p>
     </div>
     <div class="login-form">
       <div>
@@ -143,7 +153,7 @@ select.input-field{appearance:auto}
         <label class="login-label" for="inp-pass">Password</label>
         <div class="pw-wrap">
           <input class="login-input" id="inp-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password"/>
-          <button class="pw-toggle" id="pw-toggle" type="button" onclick="togglePw()">&#128065;</button>
+          <button class="pw-toggle" type="button" onclick="togglePw()">&#128065;</button>
         </div>
       </div>
       <div class="login-err" id="login-err"></div>
@@ -151,44 +161,779 @@ select.input-field{appearance:auto}
     </div>
   </div>
 </div>
-
-<!-- APP (shown after login) -->
-<div id="app-screen">
-  <div id="root"></div>
-</div>
-
+<div id="app-screen"><div id="root"></div></div>
 <script>
-function togglePw(){
-  var i=document.getElementById('inp-pass');
-  var b=document.getElementById('pw-toggle');
-  if(i.type==='password'){i.type='text';b.textContent='\uD83D\uDE48';}
-  else{i.type='password';b.textContent='\uD83D\uDC41';}
-}
-function doLogin(){
-  var u=document.getElementById('inp-user').value.trim();
-  var p=document.getElementById('inp-pass').value;
-  var err=document.getElementById('login-err');
-  if(u==='ujjan' && p==='AbCd@1949'){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-screen').style.display='block';
-    if(!window._appMounted) initApp();
-  } else {
-    err.textContent='Invalid username or password';
-  }
-}
-// Allow Enter key
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
-  document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});
-});
+function togglePw(){var i=document.getElementById('inp-pass'),b=document.querySelector('.pw-toggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='text'?'\uD83D\uDE48':'\uD83D\uDC41';}
+function doLogin(){var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');if(u==='ujjan'&&p==='AbCd@1949'){document.getElementById('login-screen').style.display='none';document.getElementById('app-screen').style.display='block';if(!window._appMounted)initApp();}else{err.textContent='Invalid username or password';}}
+document.addEventListener('DOMContentLoaded',function(){document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});});
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.2.0/Recharts.min.js"></script>
-
 <script>
+
+// ═══════════════════════════════════════════════════════════════
+// LIFE FINANCIAL PLANNER — v7 Dynamic
+// ═══════════════════════════════════════════════════════════════
+
+const LIFE_DEFAULTS = {
+  strategy: 1, // 1=Offset, 2=50/50, 3=IP
+  startAge: 31,
+  startDate: '2028-07-01',
+  // A: Starting Position
+  totalCash: 250000,
+  pporPrice: 750000,
+  depositPct: 0.20,
+  legal: 2000,
+  mortgageRate: 0.06,
+  mortgageTerm: 30,
+  pporGrowth: 0.045,
+  // B: Income
+  sal31: 90000, sal32: 100000, sal33: 110000, sal34: 120000,
+  salGrowth: 0.03,
+  sideIncome: 500,
+  sgcRate: 0.12,
+  // C: Core Living (monthly)
+  groceries: 1200, utilities: 280, phone: 200, streaming: 50,
+  clothing: 100, eatOut: 500, gifts: 100,
+  // D: Property Running (monthly)
+  council: 220, water: 80, buildingIns: 150, maintenance: 100,
+  strata: 0, garden: 83, otherHouse: 150,
+  // E: Vehicles (monthly)
+  carFuel: 300, carIns: 140, carRego: 85, carService: 150, carReplace: 500,
+  car2: 550,
+  // F: Insurance (monthly)
+  healthIns: 380, lifeIns: 0, incomeProtect: 0, trauma: 0,
+  // G: Savings Goals (monthly)
+  travel: 800, healthcare: 200, christmas: 150,
+  // H: Children (monthly)
+  childcare: 1200, primary: 400, highSchool: 700, kidsActivities: 400, uzielETF: 250,
+  uzielBirthYear: 2023,
+  // I: Super
+  superYou: 18000, superPartner: 12000,
+  superReturn: 0.07, preservationAge: 60, superSWR: 0.035,
+  // J: ETF
+  etfGross: 0.09, etfFees: 0.002, etfTaxDrag: 0.015, etfSWR: 0.035,
+  // K: CPI
+  cpiRate: 0.03,
+  // L: Investment Property
+  ipPurchaseAge: 37, ipPrice: 650000, ipDepositPct: 0.20,
+  ipLegal: 2500, ipLoanRate: 0.063, ipGrowth: 0.04,
+  ipGrossYield: 0.035, ipExpenses: 8500,
+  // M: Life Events (by age)
+  lifeEvents: [
+    {id:1, age:31, date:'2028-07-01', label:'APICS Certification', amount:5000},
+    {id:2, age:33, date:'2030-07-01', label:'Wills & POA', amount:3000},
+    {id:3, age:35, date:'2032-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:4, age:38, date:'2035-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:5, age:40, date:'2037-07-01', label:'Home Renovation + Wills', amount:63000},
+    {id:6, age:41, date:'2038-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:7, age:44, date:'2041-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:8, age:45, date:'2042-07-01', label:'Parents Health Emergency', amount:25000},
+    {id:9, age:46, date:'2043-07-01', label:'Uziel Uni Support', amount:20000},
+    {id:10,age:47, date:'2044-07-01', label:'Overseas Trip', amount:12000},
+    {id:11,age:49, date:'2046-07-01', label:'Uziel 21st Gift', amount:10000},
+    {id:12,age:50, date:'2047-07-01', label:'Overseas Family Trip', amount:12000},
+    {id:13,age:52, date:'2049-07-01', label:'Estate Planning Review', amount:3000},
+    {id:14,age:53, date:'2050-07-01', label:'Overseas Trip', amount:12000},
+    {id:15,age:56, date:'2053-07-01', label:'Overseas Trip', amount:12000},
+    {id:16,age:65, date:'2062-07-01', label:'Aged Care Reserve', amount:150000},
+  ],
+  // Extra customisable fields
+  extraIncome: [],    // {id, label, ageFrom, ageTo, monthlyAmount}
+  extraExpense: [],   // {id, label, ageFrom, ageTo, monthlyAmount, cpiLinked}
+};
+
+// ── Tax calc (ATO 2025-26) ────────────────────────────────────────────────
+function calcNetIncome(gross) {
+  let tax = 0;
+  if (gross <= 18200) tax = 0;
+  else if (gross <= 45000) tax = (gross-18200)*0.19;
+  else if (gross <= 120000) tax = 5092+(gross-45000)*0.325;
+  else if (gross <= 180000) tax = 29467+(gross-120000)*0.37;
+  else tax = 51667+(gross-180000)*0.45;
+  tax += gross*0.02 - 700; // medicare - LITO approx
+  return Math.max(0, gross - Math.max(0,tax));
+}
+
+// ── PMT formula ───────────────────────────────────────────────────────────
+function pmt(rate, nper, pv) {
+  if (rate===0) return pv/nper;
+  return pv*rate*Math.pow(1+rate,nper)/(Math.pow(1+rate,nper)-1);
+}
+
+// VIC Stamp Duty
+function vicStampDuty(price) {
+  if (price <= 25000) return price*0.014;
+  if (price <= 130000) return 350+(price-25000)*0.024;
+  if (price <= 960000) return 2870+(price-130000)*0.06;
+  if (price <= 2000000) return price*0.055;
+  return price*0.065;
+}
+
+// ── Main compute ──────────────────────────────────────────────────────────
+function computeLife(D) {
+  const rows = [];
+  const stamp = vicStampDuty(D.pporPrice);
+  const deposit = D.pporPrice * D.depositPct;
+  const loan = D.pporPrice - deposit;
+  const totalCosts = deposit + stamp + D.legal;
+  const startOffset = D.totalCash - totalCosts;
+  const annualRepay = pmt(D.mortgageRate/12, D.mortgageTerm*12, loan)*12;
+  const etfNet = D.etfGross - D.etfFees - D.etfTaxDrag;
+
+  // CPI helper
+  const cpi = (base, yrs) => base * Math.pow(1+D.cpiRate, yrs);
+
+  // Salary for age
+  function salaryGross(age) {
+    if (age===31) return D.sal31;
+    if (age===32) return D.sal32;
+    if (age===33) return D.sal33;
+    if (age===34) return D.sal34;
+    return D.sal34 * Math.pow(1+D.salGrowth, age-34);
+  }
+
+  // Child expense for age (uziel born uzielBirthYear)
+  function childMonthly(age, yrs) {
+    const uzielAge = age - (D.startAge - 31) + 31 - (2028 - D.uzielBirthYear);
+    // simpler: uziel is ~5 in 2028 (born 2023)
+    const ua = 2028 + (age - 31) - D.uzielBirthYear;
+    if (ua < 4) return cpi(D.kidsActivities, yrs)*12;
+    if (ua <= 5) return cpi(D.childcare + D.kidsActivities, yrs)*12;
+    if (ua <= 12) return cpi(D.primary + D.kidsActivities, yrs)*12;
+    if (ua <= 17) return cpi(D.highSchool + D.kidsActivities, yrs)*12;
+    return D.uzielETF*12; // flat $250/mo for uziel ETF
+  }
+
+  const coreMonthly = D.groceries+D.utilities+D.phone+D.streaming+D.clothing+D.eatOut+D.gifts;
+  const propMonthly = D.council+D.water+D.buildingIns+D.maintenance+D.strata+D.garden+D.otherHouse;
+  const veh1Monthly = D.carFuel+D.carIns+D.carRego+D.carService+D.carReplace;
+  const insMonthly  = D.healthIns+D.lifeIns+D.incomeProtect+D.trauma;
+  const savMonthly  = D.travel+D.healthcare+D.christmas;
+
+  // Life event map
+  const lecMap = {};
+  (D.lifeEvents||[]).forEach(e=>{ lecMap[e.age]=(lecMap[e.age]||0)+e.amount; });
+  // Extra income/expense by age
+  const extraIncMap = {};
+  const extraExpMap = {};
+  (D.extraIncome||[]).forEach(r=>{
+    for(let a=r.ageFrom;a<=r.ageTo;a++){extraIncMap[a]=(extraIncMap[a]||0)+r.monthlyAmount*12;}
+  });
+  (D.extraExpense||[]).forEach(r=>{
+    for(let a=r.ageFrom;a<=r.ageTo;a++){extraExpMap[a]=(extraExpMap[a]||0)+r.monthlyAmount*12;}
+  });
+
+  let offset = startOffset;
+  let etf = 0;
+  let superBal = D.superYou + D.superPartner;
+  let ipVal = 0, ipLoan = 0, ipEquity = 0;
+  let pporVal = D.pporPrice;
+  let remainLoan = loan;
+
+  for (let age = D.startAge; age <= 65; age++) {
+    const year = 2028 + (age - D.startAge);
+    const yrs = age - D.startAge;
+
+    const grossSal = salaryGross(age);
+    const netEach = calcNetIncome(grossSal);
+    const totalIncome = netEach * 2 + D.sideIncome*12 + (extraIncMap[age]||0);
+    const sgcEach = grossSal * D.sgcRate;
+
+    const core = cpi(coreMonthly,yrs)*12;
+    const prop = cpi(propMonthly,yrs)*12;
+    const veh = age>=33 ? cpi(veh1Monthly+D.car2,yrs)*12 : cpi(veh1Monthly,yrs)*12;
+    const ins = cpi(insMonthly,yrs)*12;
+    const sav = savMonthly*12; // not CPI'd per model
+    const child = childMonthly(age, yrs);
+    const extraExp = extraExpMap[age]||0;
+    const mort = remainLoan>0 ? annualRepay : 0;
+
+    // IP in Strategy 3
+    let ipTopup = 0;
+    if (D.strategy===3 && age>=D.ipPurchaseAge) {
+      if (ipLoan===0 && age===D.ipPurchaseAge) {
+        const ipDep = D.ipPrice*D.ipDepositPct;
+        const ipStamp = vicStampDuty(D.ipPrice);
+        ipLoan = D.ipPrice - ipDep;
+        ipVal = D.ipPrice;
+        offset -= (ipDep+ipStamp+D.ipLegal);
+      }
+      const ipRent = ipVal*D.ipGrossYield;
+      const ipInt = ipLoan*D.ipLoanRate;
+      const ipCF = ipRent - ipInt - D.ipExpenses;
+      if (ipCF<0) ipTopup = -ipCF;
+      ipVal *= (1+D.ipGrowth);
+      ipEquity = ipVal - ipLoan;
+    }
+
+    const totalOut = core+prop+veh+ins+sav+child+mort+ipTopup+extraExp;
+    const grossSurplus = totalIncome - totalOut;
+    const lec = lecMap[age]||0;
+    const netCash = grossSurplus - lec;
+
+    // Balance updates
+    if (D.strategy===1) {
+      // All surplus to offset
+      if (remainLoan>0) {
+        offset += netCash;
+        // Principal reduction
+        const interest = remainLoan*D.mortgageRate;
+        const principal = mort - interest;
+        remainLoan = Math.max(0, remainLoan - principal);
+        if (offset > remainLoan) { remainLoan=0; offset -= remainLoan; }
+      } else {
+        etf += netCash;
+      }
+    } else if (D.strategy===2) {
+      // 50/50
+      const half = netCash/2;
+      offset += half;
+      etf = (etf+half)*(1+etfNet);
+      const interest = remainLoan*D.mortgageRate;
+      const principal = mort - interest;
+      remainLoan = Math.max(0, remainLoan - principal);
+    } else {
+      // Strategy 3 - IP
+      offset += netCash;
+      const interest = remainLoan*D.mortgageRate;
+      const principal = mort - interest;
+      remainLoan = Math.max(0, remainLoan - principal);
+    }
+
+    // ETF growth on existing balance (S1: after debt-free)
+    if (D.strategy!==2) etf *= (1+etfNet);
+
+    // Super
+    superBal = (superBal + sgcEach*2) * (1+D.superReturn);
+
+    // PPOR value
+    pporVal *= (1+D.pporGrowth);
+
+    const nw = Math.max(0,offset) + etf + (age>=D.preservationAge?superBal:0) + ipEquity;
+    const nwTotal = Math.max(0,offset) + etf + superBal + pporVal - remainLoan + ipEquity;
+    const passiveIncome = etf*D.etfSWR + (age>=D.preservationAge ? superBal*D.superSWR : 0);
+
+    rows.push({age,year,grossSal,netEach,totalIncome,core,prop,veh,ins,sav,child,extraExp,
+      mort,ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
+      remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome,sgcEach});
+  }
+  return rows;
+}
+
+// ── Life Planner UI ───────────────────────────────────────────────────────
+const LC=createContext(null);
+function LifeProvider({children}){
+  const [D,setD]=useState(LIFE_DEFAULTS);
+  const update=useCallback((k,v)=>setD(p=>({...p,[k]:v})),[]);
+  const rows=useMemo(()=>computeLife(D),[D]);
+  return React.createElement(LC.Provider,{value:{D,setD,update,rows}},children);
+}
+const useLife=()=>useContext(LC);
+
+// ── Life Field components ─────────────────────────────────────────────────
+function LField({label,hint,k,pct=false,prefix=false}){
+  const {D,update}=useLife();
+  const value=D[k];
+  const [raw,setRaw]=useState('');
+  const [focus,setFocus]=useState(false);
+  const disp=focus?raw:(pct?(value*100).toFixed(2):String(value));
+  const inp=React.createElement('input',{type:'text',inputMode:'decimal',
+    className:'input-field'+(prefix?' has-prefix':''),value:disp,
+    onFocus:e=>{setRaw(pct?(value*100).toFixed(2):String(value));setFocus(true);setTimeout(()=>e.target.select(),0);},
+    onChange:e=>setRaw(e.target.value),
+    onBlur:()=>{const v=parseFloat(raw.replace(/[^0-9.\-]/g,''));if(!isNaN(v))update(k,pct?v/100:v);setFocus(false);}
+  });
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    prefix?React.createElement('div',{className:'input-wrap'},React.createElement('span',{className:'input-prefix'},'$'),inp):inp,
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
+
+function LDate({label,hint,k}){
+  const {D,update}=useLife();
+  return React.createElement('div',{className:'input-group'},
+    React.createElement('label',{className:'input-label'},label),
+    React.createElement('input',{type:'date',className:'input-field',value:D[k]||'',
+      onChange:e=>update(k,e.target.value)}),
+    hint&&React.createElement('span',{className:'input-hint'},hint)
+  );
+}
+
+// Life Events dynamic list
+function LifeEventRow({ev,onUpdate,onRemove}){
+  return React.createElement('div',{className:'dyn-row',style:{gridTemplateColumns:'1fr 1.2fr auto auto auto'}},
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Description'),
+      React.createElement('input',{type:'text',className:'input-field',value:ev.label,
+        onChange:e=>onUpdate('label',e.target.value)})
+    ),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Date'),
+      React.createElement('input',{type:'date',className:'input-field',value:ev.date||'',
+        onChange:e=>{
+          onUpdate('date',e.target.value);
+          // Auto-calc age from date
+          const yr=parseInt((e.target.value||'').slice(0,4));
+          if(!isNaN(yr)) onUpdate('age',31+(yr-2028));
+        }})
+    ),
+    React.createElement(DynFieldCell,{label:'Age',value:ev.age,onCommit:v=>onUpdate('age',v)}),
+    React.createElement(DynFieldCell,{label:'Amount ($)',value:ev.amount,prefix:true,onCommit:v=>onUpdate('amount',v)}),
+    React.createElement('div',{className:'input-group',style:{justifyContent:'flex-end'}},
+      React.createElement('label',{className:'input-label'},'\u00a0'),
+      React.createElement('button',{className:'btn-remove',onClick:onRemove},'✕')
+    )
+  );
+}
+
+function ExtraRecRow({row,onUpdate,onRemove,cpiOption}){
+  return React.createElement('div',{className:'dyn-row'},
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'Label'),
+      React.createElement('input',{type:'text',className:'input-field',value:row.label||'',
+        onChange:e=>onUpdate('label',e.target.value)})
+    ),
+    React.createElement(DynFieldCell,{label:'Monthly $',value:row.monthlyAmount||0,prefix:true,onCommit:v=>onUpdate('monthlyAmount',v)}),
+    React.createElement(DynFieldCell,{label:'Age From',value:row.ageFrom||31,onCommit:v=>onUpdate('ageFrom',v)}),
+    React.createElement(DynFieldCell,{label:'Age To',value:row.ageTo||65,onCommit:v=>onUpdate('ageTo',v)}),
+    cpiOption&&React.createElement('div',{className:'input-group'},
+      React.createElement('label',{className:'input-label'},'CPI?'),
+      React.createElement('select',{className:'input-field',value:String(row.cpiLinked||false),
+        onChange:e=>onUpdate('cpiLinked',e.target.value==='true')},
+        React.createElement('option',{value:'false'},'No'),
+        React.createElement('option',{value:'true'},'Yes')
+      )
+    ),
+    React.createElement('div',{className:'input-group',style:{justifyContent:'flex-end'}},
+      React.createElement('label',{className:'input-label'},'\u00a0'),
+      React.createElement('button',{className:'btn-remove',onClick:onRemove},'✕')
+    )
+  );
+}
+
+// ── Life Assumptions Page ─────────────────────────────────────────────────
+function LifeAssumptions(){
+  const {D,setD,update,rows}=useLife();
+  const [sub,setSub]=useState('position');
+
+  const SUBS=[
+    {id:'position',label:'🏠 Position'},
+    {id:'income',label:'💰 Income'},
+    {id:'expenses',label:'🛒 Expenses'},
+    {id:'super',label:'🏦 Super & ETF'},
+    {id:'ip',label:'🏗️ Inv. Property'},
+    {id:'events',label:'📅 Life Events'},
+    {id:'extras',label:'➕ Custom Fields'},
+  ];
+
+  return React.createElement('div',null,
+    React.createElement('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
+      React.createElement('div',null,
+        React.createElement('h1',{className:'page-title'},'Life Financial Planner'),
+        React.createElement('p',{className:'page-subtitle'},'35-year model: Age 31→65. Change any value, results update instantly.')
+      ),
+      React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
+        React.createElement('span',{style:{fontSize:'var(--t-xs)',color:'var(--text2)'}},'Strategy:'),
+        ...[{v:1,l:'1 · 100% Offset'},{v:2,l:'2 · 50/50 ETF'},{v:3,l:'3 · Inv. Property'}].map(s=>
+          React.createElement('button',{key:s.v,
+            style:{padding:'.35rem .8rem',borderRadius:'var(--radius-sm)',border:'1px solid',
+              borderColor:D.strategy===s.v?'var(--gold-dim)':'var(--border)',
+              background:D.strategy===s.v?'var(--gold-glow)':'transparent',
+              color:D.strategy===s.v?'var(--gold)':'var(--text2)',
+              cursor:'pointer',fontSize:'var(--t-xs)',fontFamily:"'Syne',sans-serif",fontWeight:600},
+            onClick:()=>update('strategy',s.v)},s.l)
+        )
+      )
+    ),
+
+    React.createElement('nav',{className:'subnav',style:{marginBottom:'1.5rem'}},
+      ...SUBS.map(s=>React.createElement('button',{key:s.id,
+        className:'subnav-btn'+(sub===s.id?' active':''),onClick:()=>setSub(s.id)},s.label))
+    ),
+
+    // POSITION
+    sub==='position'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'📊',title:'Starting Position (July 2028)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LDate,{label:'Start Date',k:'startDate'}),
+          React.createElement(LField,{label:'Start Age',k:'startAge'}),
+          React.createElement(LField,{label:'Total Cash Available',k:'totalCash',prefix:true}),
+          React.createElement(LField,{label:'PPOR Purchase Price',k:'pporPrice',prefix:true}),
+          React.createElement(LField,{label:'Deposit %',k:'depositPct',pct:true}),
+          React.createElement(LField,{label:'Legal & Conveyancing',k:'legal',prefix:true}),
+          React.createElement(LField,{label:'Mortgage Rate',k:'mortgageRate',pct:true,hint:'Variable P&I'}),
+          React.createElement(LField,{label:'Mortgage Term (years)',k:'mortgageTerm'}),
+          React.createElement(LField,{label:'PPOR Annual Growth',k:'pporGrowth',pct:true}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,
+            'Stamp duty (VIC auto-calc): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+Math.round(vicStampDuty(D.pporPrice)).toLocaleString()),
+            '  ·  Loan: ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+Math.round(D.pporPrice*(1-D.depositPct)).toLocaleString()),
+            '  ·  Starting offset: ',React.createElement('strong',{style:{color:'var(--green)'}},'$'+Math.round(D.totalCash-(D.pporPrice*D.depositPct+vicStampDuty(D.pporPrice)+D.legal)).toLocaleString())
+          )
+        )
+      )
+    ),
+
+    // INCOME
+    sub==='income'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'💰',title:'Salary (each person)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Salary at Age 31',k:'sal31',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 32',k:'sal32',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 33',k:'sal33',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 34 (target)',k:'sal34',prefix:true}),
+          React.createElement(LField,{label:'Growth Rate from Age 34',k:'salGrowth',pct:true,hint:'3%/yr compounding'}),
+          React.createElement(LField,{label:'Side Income ($/month)',k:'sideIncome',prefix:true}),
+          React.createElement(LField,{label:'SGC Rate',k:'sgcRate',pct:true,hint:'12% employer super'}),
+        )
+      )
+    ),
+
+    // EXPENSES
+    sub==='expenses'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🛒',title:'Core Living (monthly, +3% CPI/yr)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Groceries & Household',k:'groceries',prefix:true}),
+          React.createElement(LField,{label:'Utilities',k:'utilities',prefix:true}),
+          React.createElement(LField,{label:'Phone + Internet',k:'phone',prefix:true}),
+          React.createElement(LField,{label:'Streaming & Subscriptions',k:'streaming',prefix:true}),
+          React.createElement(LField,{label:'Clothing & Personal Care',k:'clothing',prefix:true}),
+          React.createElement(LField,{label:'Eating Out & Entertainment',k:'eatOut',prefix:true}),
+          React.createElement(LField,{label:'Gifts',k:'gifts',prefix:true}),
+          React.createElement(LField,{label:'CPI Rate',k:'cpiRate',pct:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🏡',title:'Property Running (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Council Rates',k:'council',prefix:true}),
+          React.createElement(LField,{label:'Water',k:'water',prefix:true}),
+          React.createElement(LField,{label:'Building Insurance',k:'buildingIns',prefix:true}),
+          React.createElement(LField,{label:'Maintenance Fund',k:'maintenance',prefix:true}),
+          React.createElement(LField,{label:'Strata / Body Corp',k:'strata',prefix:true}),
+          React.createElement(LField,{label:'Garden / Cleaning',k:'garden',prefix:true}),
+          React.createElement(LField,{label:'Other Household',k:'otherHouse',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🚗',title:'Vehicles (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Car 1 Fuel',k:'carFuel',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Insurance',k:'carIns',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Rego',k:'carRego',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Service/Tyres',k:'carService',prefix:true}),
+          React.createElement(LField,{label:'Car 1 Replacement Fund',k:'carReplace',prefix:true}),
+          React.createElement(LField,{label:'Car 2 All-in (age 33+)',k:'car2',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🛡️',title:'Insurance (monthly, +3% CPI)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Private Health (family)',k:'healthIns',prefix:true}),
+          React.createElement(LField,{label:'Life Insurance',k:'lifeIns',prefix:true}),
+          React.createElement(LField,{label:'Income Protection',k:'incomeProtect',prefix:true}),
+          React.createElement(LField,{label:'Trauma / Critical Illness',k:'trauma',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'🎯',title:'Savings Goals (monthly, not CPI-linked)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'International Travel Fund',k:'travel',prefix:true}),
+          React.createElement(LField,{label:'Healthcare Gap / Dental',k:'healthcare',prefix:true}),
+          React.createElement(LField,{label:'Christmas / Domestic',k:'christmas',prefix:true}),
+        )
+      ),
+      React.createElement(Section,{icon:'👶',title:'Children & Education (monthly)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Childcare (age 4-5)',k:'childcare',prefix:true}),
+          React.createElement(LField,{label:'Primary School era (age 6-12)',k:'primary',prefix:true}),
+          React.createElement(LField,{label:'High School era (age 13-17)',k:'highSchool',prefix:true}),
+          React.createElement(LField,{label:'Kids Sports & Activities',k:'kidsActivities',prefix:true}),
+          React.createElement(LField,{label:"Uziel's ETF (age 18+, flat)",k:'uzielETF',prefix:true}),
+          React.createElement(LField,{label:'Uziel Birth Year',k:'uzielBirthYear'}),
+        )
+      )
+    ),
+
+    // SUPER & ETF
+    sub==='super'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🏦',title:'Superannuation'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Your Starting Super',k:'superYou',prefix:true}),
+          React.createElement(LField,{label:'Partner Starting Super',k:'superPartner',prefix:true}),
+          React.createElement(LField,{label:'Super Net Return',k:'superReturn',pct:true,hint:'7.5% gross - 0.5% fees'}),
+          React.createElement(LField,{label:'Preservation Age',k:'preservationAge'}),
+          React.createElement(LField,{label:'Super SWR',k:'superSWR',pct:true,hint:'Safe withdrawal rate'}),
+        )
+      ),
+      React.createElement(Section,{icon:'📈',title:'ETF Portfolio'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Gross Return',k:'etfGross',pct:true,hint:'9% ASX200+global'}),
+          React.createElement(LField,{label:'MER Fees',k:'etfFees',pct:true}),
+          React.createElement(LField,{label:'Tax Drag',k:'etfTaxDrag',pct:true}),
+          React.createElement(LField,{label:'ETF SWR',k:'etfSWR',pct:true,hint:'3.5% safe withdrawal'}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,'Net ETF return: ',
+            React.createElement('strong',{style:{color:'var(--gold)'}},(((D.etfGross-D.etfFees-D.etfTaxDrag)*100).toFixed(2))+'%'))
+        )
+      )
+    ),
+
+    // IP
+    sub==='ip'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'🏗️',title:'Investment Property (Strategy 3 only)'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'IP Purchase Age',k:'ipPurchaseAge'}),
+          React.createElement(LField,{label:'IP Purchase Price',k:'ipPrice',prefix:true}),
+          React.createElement(LField,{label:'IP Deposit %',k:'ipDepositPct',pct:true}),
+          React.createElement(LField,{label:'IP Legal & Conveyancing',k:'ipLegal',prefix:true}),
+          React.createElement(LField,{label:'IP Loan Rate',k:'ipLoanRate',pct:true,hint:'Investor rate ~6.3%'}),
+          React.createElement(LField,{label:'IP Capital Growth Rate',k:'ipGrowth',pct:true}),
+          React.createElement(LField,{label:'IP Gross Rental Yield',k:'ipGrossYield',pct:true}),
+          React.createElement(LField,{label:'IP Annual Expenses',k:'ipExpenses',prefix:true,hint:'Rates, PM, insurance, maintenance'}),
+        ),
+        React.createElement('div',{className:'info-box',style:{marginTop:'.75rem'}},
+          React.createElement('p',null,
+            'IP Stamp Duty (VIC): ',React.createElement('strong',{style:{color:'var(--text)'}},'$'+Math.round(vicStampDuty(D.ipPrice)).toLocaleString()),
+            '  ·  IP Loan: ',React.createElement('strong',{style:{color:'var(--gold)'}},'$'+Math.round(D.ipPrice*(1-D.ipDepositPct)).toLocaleString())
+          )
+        )
+      )
+    ),
+
+    // LIFE EVENTS
+    sub==='events'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'📅',title:'Life Events (one-off costs by date/age)'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Enter the exact date for each event. Age auto-calculates from date. Events are drawn from the offset account.')
+        ),
+        ...(D.lifeEvents||[]).map(ev=>React.createElement(LifeEventRow,{key:ev.id,ev,
+          onUpdate:(k,v)=>setD(p=>({...p,lifeEvents:p.lifeEvents.map(e=>e.id===ev.id?{...e,[k]:v}:e)})),
+          onRemove:()=>setD(p=>({...p,lifeEvents:p.lifeEvents.filter(e=>e.id!==ev.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          lifeEvents:[...p.lifeEvents,{id:Date.now(),age:40,date:'2037-07-01',label:'New Event',amount:5000}]
+        }))},'+ Add Life Event')
+      )
+    ),
+
+    // EXTRAS
+    sub==='extras'&&React.createElement('div',null,
+      React.createElement(Section,{icon:'💵',title:'Extra Income Streams'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Add any recurring income not already modelled (rental, dividends, side business).')
+        ),
+        ...(D.extraIncome||[]).map(row=>React.createElement(ExtraRecRow,{key:row.id,row,cpiOption:false,
+          onUpdate:(k,v)=>setD(p=>({...p,extraIncome:p.extraIncome.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
+          onRemove:()=>setD(p=>({...p,extraIncome:p.extraIncome.filter(r=>r.id!==row.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          extraIncome:[...p.extraIncome,{id:Date.now(),label:'',monthlyAmount:0,ageFrom:31,ageTo:65}]
+        }))},'+ Add Income Stream')
+      ),
+      React.createElement(Section,{icon:'💸',title:'Extra Recurring Expenses'},
+        React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
+          React.createElement('p',null,'Add any recurring expense not already modelled.')
+        ),
+        ...(D.extraExpense||[]).map(row=>React.createElement(ExtraRecRow,{key:row.id,row,cpiOption:true,
+          onUpdate:(k,v)=>setD(p=>({...p,extraExpense:p.extraExpense.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
+          onRemove:()=>setD(p=>({...p,extraExpense:p.extraExpense.filter(r=>r.id!==row.id)}))
+        })),
+        React.createElement('button',{className:'btn-add',onClick:()=>setD(p=>({...p,
+          extraExpense:[...p.extraExpense,{id:Date.now(),label:'',monthlyAmount:0,ageFrom:31,ageTo:65,cpiLinked:false}]
+        }))},'+ Add Expense')
+      )
+    )
+  );
+}
+
+// ── Life Results Page ─────────────────────────────────────────────────────
+function LifeResults(){
+  const {rows,D}=useLife();
+  const [sub,setSub]=useState('summary');
+  const SUBS=[
+    {id:'summary',label:'📊 Milestones'},
+    {id:'cashflow',label:'💵 Cashflow'},
+    {id:'wealth',label:'📈 Wealth Growth'},
+    {id:'passive',label:'🎯 Passive Income'},
+  ];
+
+  const last=rows[rows.length-1]||{};
+  const at=(age)=>rows.find(r=>r.age===age)||{};
+
+  return React.createElement('div',null,
+    React.createElement('h1',{className:'page-title'},'Life Plan Results'),
+    React.createElement('p',{className:'page-subtitle'},'Strategy '+(D.strategy===1?'1: 100% Offset':D.strategy===2?'2: 50/50 ETF':'3: Investment Property')+' · Age 31→65'),
+    React.createElement('nav',{className:'subnav'},
+      ...SUBS.map(s=>React.createElement('button',{key:s.id,className:'subnav-btn'+(sub===s.id?' active':''),onClick:()=>setSub(s.id)},s.label))
+    ),
+
+    sub==='summary'&&React.createElement('div',null,
+      React.createElement('div',{className:'stat-grid'},
+        React.createElement('div',{className:'stat-card highlight'},
+          React.createElement('div',{className:'stat-label'},'Total Net Worth at 60'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(60).nwTotal)),
+          React.createElement('div',{className:'stat-sub'},'Incl. PPOR, super, ETF, offset')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'ETF Portfolio at 60'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(60).etf)),
+          React.createElement('div',{className:'stat-sub'},'Investable wealth')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'Super (combined) at 60'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(60).superBal)),
+          React.createElement('div',{className:'stat-sub'},'SGC-only contributions')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'Passive Income at 60'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(60).passiveIncome)),
+          React.createElement('div',{className:'stat-sub'},'ETF + Super SWR 3.5%')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'NW Excl Super at 35'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(35).nw)),
+          React.createElement('div',{className:'stat-sub'},'Early accumulation check')
+        ),
+        React.createElement('div',{className:'stat-card'},
+          React.createElement('div',{className:'stat-label'},'NW Excl Super at 45'),
+          React.createElement('div',{className:'stat-value'},fmtA(at(45).nw)),
+          React.createElement('div',{className:'stat-sub'},'Mid-life milestone')
+        ),
+      ),
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Net Worth Growth (Age 31→65)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:300},
+          React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Line,{type:'monotone',dataKey:'etf',name:'ETF',stroke:'var(--gold)',strokeWidth:2,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'superBal',name:'Super',stroke:'var(--green)',strokeWidth:2,dot:false}),
+            React.createElement(Line,{type:'monotone',dataKey:'nwTotal',name:'Total NW',stroke:'var(--blue)',strokeWidth:2.5,dot:false}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+          )
+        )
+      )
+    ),
+
+    sub==='cashflow'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Annual Net Cash (after life events)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:240},
+          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(ReferenceLine,{y:0,stroke:'var(--red)',strokeDasharray:'4 2'}),
+            React.createElement(Bar,{dataKey:'netCash',name:'Net Cash',radius:[2,2,0,0]},
+              ...rows.map((r,i)=>React.createElement(Cell,{key:i,fill:r.netCash>=0?'var(--green)':'var(--red)'}))
+            )
+          )
+        )
+      ),
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Full Annual Cashflow Table'),
+        React.createElement('div',{className:'table-wrap'},
+          React.createElement('table',{className:'data-table'},
+            React.createElement('thead',null,React.createElement('tr',null,
+              ...['Age','Year','Gross Sal','Net Income','Core','Prop','Veh','Ins','Sav','Child','Mortgage','Life Event','Net Cash','Offset','ETF','Super']
+                .map(h=>React.createElement('th',{key:h},h))
+            )),
+            React.createElement('tbody',null,
+              ...rows.map(r=>React.createElement('tr',{key:r.age},
+                React.createElement('td',{style:{fontWeight:700,color:'var(--gold)'}},r.age),
+                React.createElement('td',null,r.year),
+                React.createElement('td',null,fmtA(r.grossSal)),
+                React.createElement('td',{className:'gold-t'},fmtA(r.totalIncome)),
+                React.createElement('td',null,fmtA(r.core)),
+                React.createElement('td',null,fmtA(r.prop)),
+                React.createElement('td',null,fmtA(r.veh)),
+                React.createElement('td',null,fmtA(r.ins)),
+                React.createElement('td',null,fmtA(r.sav)),
+                React.createElement('td',null,fmtA(r.child)),
+                React.createElement('td',null,fmtA(r.mort)),
+                React.createElement('td',{className:r.lec>0?'neg':''},r.lec>0?fmtA(-r.lec):'—'),
+                React.createElement('td',{className:r.netCash>=0?'pos':'neg'},fmtA(r.netCash)),
+                React.createElement('td',{className:'gold-t'},fmtA(r.offset)),
+                React.createElement('td',null,fmtA(r.etf)),
+                React.createElement('td',null,fmtA(r.superBal))
+              ))
+            )
+          )
+        )
+      )
+    ),
+
+    sub==='wealth'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Wealth Components Stacked'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:320},
+          React.createElement(BarChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1e6).toFixed(1)+'M',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Bar,{dataKey:'offset',name:'Offset',stackId:'a',fill:'var(--blue)'}),
+            React.createElement(Bar,{dataKey:'etf',name:'ETF',stackId:'a',fill:'var(--gold)'}),
+            React.createElement(Bar,{dataKey:'superBal',name:'Super',stackId:'a',fill:'var(--green)'}),
+            D.strategy===3&&React.createElement(Bar,{dataKey:'ipEquity',name:'IP Equity',stackId:'a',fill:'#a78bfa'}),
+            React.createElement(Legend,{wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--text2)'}})
+          )
+        )
+      )
+    ),
+
+    sub==='passive'&&React.createElement('div',null,
+      React.createElement('div',{className:'chart-card'},
+        React.createElement('div',{className:'chart-title'},'Passive Income Potential (3.5% SWR)'),
+        React.createElement(ResponsiveContainer,{width:'100%',height:260},
+          React.createElement(LineChart,{data:rows,margin:{top:8,right:16,bottom:0,left:8}},
+            React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis,{dataKey:'age',tick:{fill:'var(--text3)',fontSize:11},tickLine:false}),
+            React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+            React.createElement(Tooltip,{formatter:(v,n)=>[fmtA(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)'}}),
+            React.createElement(Line,{type:'monotone',dataKey:'passiveIncome',name:'Passive Income',stroke:'var(--gold)',strokeWidth:2.5,dot:false}),
+            React.createElement(ReferenceLine,{x:60,stroke:'var(--green)',strokeDasharray:'4 2',label:{value:'Age 60',fill:'var(--green)',fontSize:11}})
+          )
+        )
+      ),
+      React.createElement('div',{className:'stat-grid'},
+        ...[35,40,45,50,55,60,65].map(age=>React.createElement('div',{key:age,className:'stat-card'+(age===60?' highlight':'')},
+          React.createElement('div',{className:'stat-label'},'Age '+age),
+          React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},fmtA(at(age).passiveIncome)),
+          React.createElement('div',{className:'stat-sub'},'NW: '+fmtA(at(age).nwTotal))
+        ))
+      )
+    )
+  );
+}
+
+// ── Life Planner Root ─────────────────────────────────────────────────────
+function LifePlanner(){
+  const [page,setPage]=useState('assumptions');
+  return React.createElement(LifeProvider,null,
+    React.createElement('div',null,
+      React.createElement('nav',{className:'subnav',style:{marginBottom:'0'}},
+        React.createElement('button',{className:'subnav-btn'+(page==='assumptions'?' active':''),onClick:()=>setPage('assumptions')},'⚙️ Assumptions'),
+        React.createElement('button',{className:'subnav-btn'+(page==='results'?' active':''),onClick:()=>setPage('results')},'📊 Results')
+      ),
+      React.createElement('div',{style:{marginTop:'1.5rem'}},
+        page==='assumptions'&&React.createElement(LifeAssumptions,null),
+        page==='results'&&React.createElement(LifeResults,null)
+      )
+    )
+  );
+}
+
+const fmtA=n=>n==null?'—':(n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
+
+
 
 const {useState,useMemo,useEffect,useContext,createContext,useCallback}=React;
 const {LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,Legend,
@@ -916,7 +1661,7 @@ function Results(){
 }
 
 // ── App root ──────────────────────────────────────────────────────────────
-const NAV=[{id:'assumptions',label:'Assumptions'},{id:'results',label:'Results'}];
+const NAV=[{id:'assumptions',label:'🇦🇺 Family Plan'},{id:'results',label:'📊 Family Results'},{id:'life',label:'🏠 Life Plan'}];
 
 function AppInner(){
   const [page,setPage]=useState('assumptions');
@@ -962,10 +1707,7 @@ function App(){
   return React.createElement(FinanceProvider,null,React.createElement(AppInner,null));
 }
 window._appMounted=false;
-function initApp(){
-  window._appMounted=true;
-  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-}
+function initApp(){window._appMounted=true;ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));}
 
 </script>
 </body>
