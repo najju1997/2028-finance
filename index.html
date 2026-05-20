@@ -162,8 +162,28 @@ select.input-field{appearance:auto}
 <script>
 var _pwVisible=false;
 function togglePw(){var i=document.getElementById('inp-pass'),b=document.getElementById('pw-btn');_pwVisible=!_pwVisible;i.type=_pwVisible?'text':'password';b.textContent=_pwVisible?'Hide':'Show';}
-function doLogin(){var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');err.textContent='';if(u==='ujjan'&&p==='AbCd@1949'){document.getElementById('login-screen').style.display='none';document.getElementById('app-screen').style.display='block';if(!window._appMounted)initApp();}else{err.textContent='Invalid username or password';}}
-document.addEventListener('DOMContentLoaded',function(){document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});});
+function doLogin(){
+  var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');
+  err.textContent='';
+  if(u==='ujjan'&&p==='AbCd@1949'){
+    localStorage.setItem('FP_Logged_In','true'); // Save HTML login state
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-screen').style.display='block';
+    if(!window._appMounted)initApp();
+  }else{
+    err.textContent='Invalid username or password';
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  // Auto-login if previously authenticated
+  if(localStorage.getItem('FP_Logged_In')==='true'){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-screen').style.display='block';
+    if(!window._appMounted)initApp();
+  }
+  document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});
+});
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -907,9 +927,12 @@ const NAV=[{id:'assumptions',label:'🇦🇺 Family Plan'},{id:'results',label:'
 function AppInner(){
   const [page,setPage]=useState('assumptions');
   const [menuOpen,setMenuOpen]=useState(false);
-  const [loggedIn,setLoggedIn]=useState(false);
+  const [loggedIn,setLoggedIn]=useState(()=>localStorage.getItem('FP_React_Logged_In')==='true');
 
-  if(!loggedIn) return React.createElement(Login,{onLogin:()=>setLoggedIn(true)});
+  if(!loggedIn) return React.createElement(Login,{onLogin:()=>{
+    localStorage.setItem('FP_React_Logged_In','true');
+    setLoggedIn(true);
+  }});
 
   return React.createElement('div',{className:'app'},
     React.createElement('header',{className:'topbar'},
@@ -927,7 +950,11 @@ function AppInner(){
             React.createElement('span',{className:'ham-line',style:menuOpen?{opacity:0}:{}}),
             React.createElement('span',{className:'ham-line',style:menuOpen?{transform:'translateY(-7px) rotate(-45deg)'}:{}})
           ),
-          React.createElement('button',{onClick:()=>setLoggedIn(false),
+          React.createElement('button',{onClick:()=>{
+              localStorage.removeItem('FP_Logged_In');
+              localStorage.removeItem('FP_React_Logged_In');
+              window.location.reload();
+            },
             style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',
               cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)'}},
             'Logout')
@@ -980,8 +1007,8 @@ const LIFE_DEFAULTS = {
   mortgageTerm: 30,
   pporGrowth: 0.045,
   // B: Income
-  sal31: 90000, sal32: 100000, sal33: 110000, sal34: 120000,
-  salGrowth: 0.03,
+  sal31: 90000, sal32: 100000, sal33: 110000, sal34: 120000, salGrowth: 0.03,
+  wifeSal31: 90000, wifeSal32: 100000, wifeSal33: 110000, wifeSal34: 120000, wifeSalGrowth: 0.03,
   sideIncome: 500,
   sgcRate: 0.12,
   // C: Core Living (monthly)
@@ -1084,6 +1111,13 @@ function computeLife(D) {
     if (age===34) return D.sal34;
     return D.sal34 * Math.pow(1+D.salGrowth, age-34);
   }
+  function wifeSalaryGross(age) {
+    if (age===31) return D.wifeSal31 ?? D.sal31;
+    if (age===32) return D.wifeSal32 ?? D.sal32;
+    if (age===33) return D.wifeSal33 ?? D.sal33;
+    if (age===34) return D.wifeSal34 ?? D.sal34;
+    return (D.wifeSal34 ?? D.sal34) * Math.pow(1+(D.wifeSalGrowth ?? D.salGrowth), age-34);
+  }
 
   // Child expense for age (uziel born uzielBirthYear)
   function childMonthly(age, yrs) {
@@ -1128,9 +1162,12 @@ function computeLife(D) {
     const yrs = age - D.startAge;
 
     const grossSal = salaryGross(age);
-    const netEach = calcNetIncome(grossSal);
-    const totalIncome = netEach * 2 + D.sideIncome*12 + (extraIncMap[age]||0);
-    const sgcEach = grossSal * D.sgcRate;
+    const wifeGrossSal = wifeSalaryGross(age);
+    const netYou = calcNetIncome(grossSal);
+    const netWife = calcNetIncome(wifeGrossSal);
+    const totalIncome = netYou + netWife + D.sideIncome*12 + (extraIncMap[age]||0);
+    const sgcYou = grossSal * D.sgcRate;
+    const sgcWife = wifeGrossSal * D.sgcRate;
 
     const core = cpi(coreMonthly,yrs)*12;
     const prop = cpi(propMonthly,yrs)*12;
@@ -1197,7 +1234,7 @@ function computeLife(D) {
     if (D.strategy!==2) etf *= (1+etfNet);
 
     // Super
-    superBal = (superBal + sgcEach*2) * (1+D.superReturn);
+    superBal = (superBal + sgcYou + sgcWife) * (1+D.superReturn);
 
     // PPOR value
     pporVal *= (1+D.pporGrowth);
@@ -1206,9 +1243,9 @@ function computeLife(D) {
     const nwTotal = Math.max(0,offset) + etf + superBal + pporVal - remainLoan + ipEquity;
     const passiveIncome = etf*D.etfSWR + (age>=D.preservationAge ? superBal*D.superSWR : 0);
 
-    rows.push({age,year,grossSal,netEach,totalIncome,core,prop,veh,ins,sav,child,extraExp,
+    rows.push({age,year,grossSal: grossSal+wifeGrossSal,netEach: netYou+netWife,totalIncome,core,prop,veh,ins,sav,child,extraExp,
       mort,ipTopup,totalOut,grossSurplus,lec,netCash,offset:Math.max(0,offset),
-      remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome,sgcEach});
+      remainLoan,etf,superBal,pporVal,ipVal,ipEquity,nw,nwTotal,passiveIncome});
   }
   return rows;
 }
@@ -1217,10 +1254,21 @@ function computeLife(D) {
 const LC=createContext(null);
 function LifeProvider({children,startingCash}){
   const [D,setD]=useState(()=>{
-    try{const s=localStorage.getItem('FinancePlan_D');if(s)return JSON.parse(s);}catch(e){}
-    return {...LIFE_DEFAULTS,totalCash:startingCash??LIFE_DEFAULTS.totalCash};
+    let saved = {};
+    try{const s=localStorage.getItem('FinancePlan_D');if(s) saved=JSON.parse(s);}catch(e){}
+    return {...LIFE_DEFAULTS, ...saved, totalCash: startingCash ?? LIFE_DEFAULTS.totalCash};
   });
-  useEffect(()=>{localStorage.setItem('FinancePlan_D',JSON.stringify(D));},[D]);
+
+  // Force totalCash to ALWAYS stay in sync with startingCash when it updates from Family Plan
+  useEffect(()=>{
+    setD(p => p.totalCash === startingCash ? p : {...p, totalCash: startingCash});
+  }, [startingCash]);
+
+  useEffect(()=>{
+    const toSave = {...D};
+    delete toSave.totalCash; // Never store dynamic available cash in local storage
+    localStorage.setItem('FinancePlan_D',JSON.stringify(toSave));
+  },[D]);
 
   const update=useCallback((k,v)=>setD(p=>({...p,[k]:v})),[]);
   const rows=useMemo(()=>computeLife(D),[D]);
@@ -1376,13 +1424,26 @@ function LifeAssumptions(){
 
     // INCOME
     sub==='income'&&React.createElement('div',null,
-      React.createElement(Section,{icon:'💰',title:'Salary (each person)'},
+      React.createElement(Section,{icon:'💰',title:'Your Salary'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Salary at Age 31',k:'sal31',prefix:true}),
           React.createElement(LField,{label:'Salary at Age 32',k:'sal32',prefix:true}),
           React.createElement(LField,{label:'Salary at Age 33',k:'sal33',prefix:true}),
           React.createElement(LField,{label:'Salary at Age 34 (target)',k:'sal34',prefix:true}),
           React.createElement(LField,{label:'Growth Rate from Age 34',k:'salGrowth',pct:true,hint:'3%/yr compounding'}),
+        )
+      ),
+      React.createElement(Section,{icon:'👩‍💼',title:'Wife Salary'},
+        React.createElement('div',{className:'input-grid'},
+          React.createElement(LField,{label:'Salary at Age 31',k:'wifeSal31',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 32',k:'wifeSal32',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 33',k:'wifeSal33',prefix:true}),
+          React.createElement(LField,{label:'Salary at Age 34 (target)',k:'wifeSal34',prefix:true}),
+          React.createElement(LField,{label:'Growth Rate from Age 34',k:'wifeSalGrowth',pct:true,hint:'3%/yr compounding'}),
+        )
+      ),
+      React.createElement(Section,{icon:'💵',title:'Other Income & Super'},
+        React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Side Income ($/month)',k:'sideIncome',prefix:true}),
           React.createElement(LField,{label:'SGC Rate',k:'sgcRate',pct:true,hint:'12% employer super'}),
         )
