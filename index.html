@@ -159,7 +159,6 @@ select.input-field{appearance:auto}
   </div>
 </div>
 <div id="app-screen"><div id="root"></div></div>
-
 <script>
 var _pwVisible = false;
 function togglePw() {
@@ -183,12 +182,8 @@ function doLogin() {
   }
 }
 document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('inp-pass').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-  });
-  document.getElementById('inp-user').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('inp-pass').focus();
-  });
+  document.getElementById('inp-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('inp-user').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('inp-pass').focus(); });
 });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -961,7 +956,7 @@ function AppInner(){
     React.createElement('main',{className:'main-content'},
       page==='assumptions'&&React.createElement(Assumptions,{onGo:()=>setPage('results')}),
       page==='results'&&React.createElement(Results,null),
-      page==='life'&&React.createElement(LifePlanner,null)
+      page==='life'&&React.createElement(LifePlannerConnected,null)
     )
   );
 }
@@ -971,6 +966,15 @@ function App(){
 }
 window._appMounted=false;
 function initApp(){window._appMounted=true;ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));}
+
+// Connects Family Plan Jul-28 balance → Life Plan starting cash
+function LifePlannerConnected(){
+  const {compute}=useFinance();
+  const rows=useMemo(()=>compute(),[compute]);
+  const last=rows[rows.length-1];
+  const startingCash=Math.round((last.balA||0)+(last.balB||0));
+  return React.createElement(LifePlanner,{startingCash});
+}
 
 
 
@@ -1226,8 +1230,8 @@ function computeLife(D) {
 
 // ── Life Planner UI ───────────────────────────────────────────────────────
 const LC=createContext(null);
-function LifeProvider({children}){
-  const [D,setD]=useState(LIFE_DEFAULTS);
+function LifeProvider({children,startingCash}){
+  const [D,setD]=useState({...LIFE_DEFAULTS,totalCash:startingCash??LIFE_DEFAULTS.totalCash});
   const update=useCallback((k,v)=>setD(p=>({...p,[k]:v})),[]);
   const rows=useMemo(()=>computeLife(D),[D]);
   return React.createElement(LC.Provider,{value:{D,setD,update,rows}},children);
@@ -1715,9 +1719,9 @@ function LifeResults(){
 }
 
 // ── Life Planner Root ─────────────────────────────────────────────────────
-function LifePlanner(){
+function LifePlanner({startingCash}){
   const [page,setPage]=useState('assumptions');
-  return React.createElement(LifeProvider,null,
+  return React.createElement(LifeProvider,{startingCash},
     React.createElement('div',null,
       React.createElement('nav',{className:'subnav',style:{marginBottom:'0'}},
         React.createElement('button',{className:'subnav-btn'+(page==='assumptions'?' active':''),onClick:()=>setPage('assumptions')},'⚙️ Assumptions'),
