@@ -118,7 +118,7 @@ select.input-field{appearance:auto}
 .login-input:focus{outline:none;border-color:var(--gold-dim)}
 .pw-wrap{position:relative}
 .pw-wrap .login-input{padding-right:2.8rem}
-.pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:var(--t-md);line-height:1;padding:0}
+.pw-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;line-height:1;padding:.25rem}
 .login-err{color:var(--red);font-size:var(--t-xs);text-align:center;min-height:1.2em}
 .login-btn{background:var(--gold);color:#0b0e14;border:none;border-radius:var(--radius-sm);padding:.8rem;font-family:'Syne',sans-serif;font-weight:700;font-size:var(--t-md);cursor:pointer;letter-spacing:.04em;width:100%;margin-top:.25rem}
 .login-btn:hover{background:#e8bc55}
@@ -149,20 +149,47 @@ select.input-field{appearance:auto}
       <div>
         <label class="login-label" for="inp-pass">Password</label>
         <div class="pw-wrap">
-          <input class="login-input" id="inp-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password"/>
-          <button class="pw-toggle" type="button" onclick="togglePw()">&#128065;</button>
+          <input class="login-input" id="inp-pass" type="password" placeholder="password" autocomplete="current-password"/>
+          <button class="pw-toggle" type="button" id="pw-btn" onclick="togglePw()">Show</button>
         </div>
       </div>
       <div class="login-err" id="login-err"></div>
-      <button class="login-btn" type="button" onclick="doLogin()">Sign In &#8594;</button>
+      <button class="login-btn" type="button" onclick="doLogin()">Sign In</button>
     </div>
   </div>
 </div>
 <div id="app-screen"><div id="root"></div></div>
+
 <script>
-function togglePw(){var i=document.getElementById('inp-pass'),b=document.querySelector('.pw-toggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='text'?'\uD83D\uDE48':'\uD83D\uDC41';}
-function doLogin(){var u=document.getElementById('inp-user').value.trim(),p=document.getElementById('inp-pass').value,err=document.getElementById('login-err');if(u==='ujjan'&&p==='AbCd@1949'){document.getElementById('login-screen').style.display='none';document.getElementById('app-screen').style.display='block';if(!window._appMounted)initApp();}else{err.textContent='Invalid username or password';}}
-document.addEventListener('DOMContentLoaded',function(){document.getElementById('inp-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});document.getElementById('inp-user').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-pass').focus();});});
+var _pwVisible = false;
+function togglePw() {
+  var inp = document.getElementById('inp-pass');
+  var btn = document.getElementById('pw-btn');
+  _pwVisible = !_pwVisible;
+  inp.type = _pwVisible ? 'text' : 'password';
+  btn.textContent = _pwVisible ? 'Hide' : 'Show';
+}
+function doLogin() {
+  var u = document.getElementById('inp-user').value.trim();
+  var p = document.getElementById('inp-pass').value;
+  var err = document.getElementById('login-err');
+  err.textContent = '';
+  if (u === 'ujjan' && p === 'AbCd@1949') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    if (!window._appMounted) initApp();
+  } else {
+    err.textContent = 'Invalid username or password';
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('inp-pass').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('inp-user').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('inp-pass').focus();
+  });
+});
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -933,7 +960,8 @@ function AppInner(){
     ),
     React.createElement('main',{className:'main-content'},
       page==='assumptions'&&React.createElement(Assumptions,{onGo:()=>setPage('results')}),
-      page==='results'&&React.createElement(Results,null)
+      page==='results'&&React.createElement(Results,null),
+      page==='life'&&React.createElement(LifePlanner,null)
     )
   );
 }
