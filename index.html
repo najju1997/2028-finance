@@ -122,6 +122,16 @@ select.input-field{appearance:auto}
 .login-err{color:var(--red);font-size:var(--t-xs);text-align:center;min-height:1.2em}
 .login-btn{background:var(--gold);color:#0b0e14;border:none;border-radius:var(--radius-sm);padding:.8rem;font-family:'Syne',sans-serif;font-weight:700;font-size:var(--t-md);cursor:pointer;letter-spacing:.04em;width:100%;margin-top:.25rem}
 .login-btn:hover{background:#e8bc55}
+.save-indicator{display:flex;align-items:center;gap:.4rem;font-size:var(--t-xs);padding:.25rem .6rem;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border)}
+.save-indicator.saved{color:var(--green);border-color:var(--green)}
+.save-indicator.saving{color:var(--gold);border-color:var(--gold-dim)}
+.save-indicator.error{color:var(--red);border-color:var(--red)}
+.save-indicator .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.save-indicator.saving .dot{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:1rem}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -180,6 +190,87 @@ document.addEventListener('DOMContentLoaded',function(){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.2.0/Recharts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── Supabase Configuration ────────────────────────────────────────────────
+const SUPABASE_URL = 'https://ehbwbrosbdoombaekfvd.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYndicm9zYmRvb21iYWVrZnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTYxMTksImV4cCI6MjA2MjYzMjExOX0.Lg7tnV7M-3wwmr3J-hkGVIXutvCEQ4R2g9MuuMYDxGU';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const CURRENT_USER_ID = 'ujjan'; // Linked to the login
+const PLAN_NAME = 'My Plan';
+
+// ── Supabase Helper Functions ─────────────────────────────────────────────
+async function loadFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('finance_plans')
+      .select('*')
+      .eq('user_id', CURRENT_USER_ID)
+      .eq('plan_name', PLAN_NAME)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('[Supabase] Load error:', error);
+      return null;
+    }
+    
+    if (data) {
+      console.log('[Supabase] Loaded data from database');
+      return {
+        dates: data.dates || {},
+        income: data.income || {},
+        savings: data.savings || {},
+        expenses: data.expenses || {},
+        childcare: data.childcare || {},
+        tax: data.tax || {},
+        nepal: data.nepal || {},
+        oneoff: data.oneoff || {},
+        extraIncomes: data.extra_incomes || [],
+        extraExpenses: data.extra_expenses || [],
+        extraOneoffs: data.extra_oneoffs || []
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error('[Supabase] Load exception:', e);
+    return null;
+  }
+}
+
+async function saveToSupabase(A) {
+  try {
+    const payload = {
+      user_id: CURRENT_USER_ID,
+      plan_name: PLAN_NAME,
+      dates: A.dates,
+      income: A.income,
+      savings: A.savings,
+      expenses: A.expenses,
+      childcare: A.childcare,
+      tax: A.tax,
+      nepal: A.nepal,
+      oneoff: A.oneoff,
+      extra_incomes: A.extraIncomes || [],
+      extra_expenses: A.extraExpenses || [],
+      extra_oneoffs: A.extraOneoffs || []
+    };
+    
+    const { error } = await supabase
+      .from('finance_plans')
+      .upsert(payload, { onConflict: 'user_id,plan_name' });
+    
+    if (error) {
+      console.error('[Supabase] Save error:', error);
+      return false;
+    }
+    console.log('[Supabase] Data saved successfully');
+    return true;
+  } catch (e) {
+    console.error('[Supabase] Save exception:', e);
+    return false;
+  }
+}
+</script>
 <script>
 
 const {useState,useMemo,useEffect,useContext,createContext,useCallback}=React;
@@ -208,11 +299,63 @@ const DEFAULTS={
 // ── Context ───────────────────────────────────────────────────────────────
 const FC=createContext(null);
 function FinanceProvider({children}){
-  const [A,setA]=useState(()=>{
-    try{const s=localStorage.getItem('FinancePlan_A');if(s)return JSON.parse(s);}catch(e){}
-    return DEFAULTS;
-  });
-  useEffect(()=>{localStorage.setItem('FinancePlan_A',JSON.stringify(A));},[A]);
+  const [A,setA]=useState(DEFAULTS);
+  const [loading,setLoading]=useState(true);
+  const [saveStatus,setSaveStatus]=useState('saved'); // 'saved', 'saving', 'error'
+  const saveTimeoutRef=React.useRef(null);
+
+  // Load from Supabase on mount
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      const dbData=await loadFromSupabase();
+      if(dbData){
+        // Merge with DEFAULTS to fill any missing fields
+        setA(prev=>({
+          ...DEFAULTS,
+          ...dbData,
+          dates:{...DEFAULTS.dates,...dbData.dates},
+          income:{...DEFAULTS.income,...dbData.income},
+          savings:{...DEFAULTS.savings,...dbData.savings},
+          expenses:{...DEFAULTS.expenses,...dbData.expenses},
+          childcare:{...DEFAULTS.childcare,...dbData.childcare},
+          tax:{...DEFAULTS.tax,...dbData.tax},
+          nepal:{...DEFAULTS.nepal,...dbData.nepal},
+          oneoff:{...DEFAULTS.oneoff,...dbData.oneoff},
+        }));
+      } else {
+        // No data in Supabase, try localStorage as fallback for migration
+        try{
+          const s=localStorage.getItem('FinancePlan_A');
+          if(s){
+            const localData=JSON.parse(s);
+            setA(localData);
+            // Migrate localStorage data to Supabase
+            await saveToSupabase(localData);
+            console.log('[Supabase] Migrated localStorage data to database');
+          }
+        }catch(e){}
+      }
+      setLoading(false);
+    })();
+  },[]);
+
+  // Debounced save to Supabase when A changes
+  useEffect(()=>{
+    if(loading) return; // Don't save during initial load
+    
+    setSaveStatus('saving');
+    if(saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    
+    saveTimeoutRef.current=setTimeout(async()=>{
+      const success=await saveToSupabase(A);
+      setSaveStatus(success?'saved':'error');
+      // Also keep localStorage as backup
+      localStorage.setItem('FinancePlan_A',JSON.stringify(A));
+    },1000); // Debounce 1 second
+    
+    return ()=>{if(saveTimeoutRef.current)clearTimeout(saveTimeoutRef.current);};
+  },[A,loading]);
 
   const update=useCallback((sec,key,val)=>setA(p=>({...p,[sec]:{...p[sec],[key]:val}})),[]);
   const WPM=365.25/12/7;
@@ -306,7 +449,7 @@ function FinanceProvider({children}){
     return {noInt,fixed,mktYou,mktWife,total,totalAUD:total/nepal.exchange,years:yrs};
   },[A]);
 
-  return React.createElement(FC.Provider,{value:{A,setA,update,compute,nepalCalc,fetchRate}},children);
+  return React.createElement(FC.Provider,{value:{A,setA,update,compute,nepalCalc,fetchRate,loading,saveStatus}},children);
 }
 const useFinance=()=>useContext(FC);
 
@@ -891,11 +1034,21 @@ function Projection2028() {
 const NAV=[{id:'projection',label:'🇦🇺 Projection By 2028'},{id:'life',label:'🏠 Life Plan'}];
 
 function AppInner(){
+  const {loading,saveStatus}=useFinance();
   const [page,setPage]=useState(()=>localStorage.getItem('FP_Main_Page') || 'projection');
   useEffect(()=>localStorage.setItem('FP_Main_Page', page), [page]);
   
   const [menuOpen,setMenuOpen]=useState(false);
 
+  if(loading){
+    return React.createElement('div',{className:'loading-screen'},
+      React.createElement('div',{className:'loading-spinner'}),
+      React.createElement('p',{style:{color:'var(--text2)',fontSize:'var(--t-sm)'}},'Loading your data...')
+    );
+  }
+
+  const statusLabel=saveStatus==='saved'?'Saved':saveStatus==='saving'?'Saving...':'Error';
+  
   return React.createElement('div',{className:'app'},
     React.createElement('header',{className:'topbar'},
       React.createElement('div',{className:'topbar-inner'},
@@ -907,6 +1060,10 @@ function AppInner(){
           ...NAV.map(n=>React.createElement('button',{key:n.id,className:'nav-btn'+(page===n.id?' active':''),onClick:()=>setPage(n.id)},n.label))
         ),
         React.createElement('div',{style:{display:'flex',gap:'.5rem',alignItems:'center'}},
+          React.createElement('div',{className:'save-indicator '+saveStatus},
+            React.createElement('span',{className:'dot'}),
+            statusLabel
+          ),
           React.createElement('button',{className:'hamburger',onClick:()=>setMenuOpen(o=>!o)},
             React.createElement('span',{className:'ham-line',style:menuOpen?{transform:'translateY(7px) rotate(45deg)'}:{}}),
             React.createElement('span',{className:'ham-line',style:menuOpen?{opacity:0}:{}}),
@@ -1348,7 +1505,7 @@ function ExtraRecRow({row,onUpdate,onRemove,cpiOption}){
   );
 }
 
-// ── Life Assumptions Page ─────────────────────────────────────────────────
+// ── Life Assumptions Page ──────────────────────────���──────────────────────
 function LifeAssumptions(){
   const {D,setD,update,rows}=useLife();
   const [sub,setSub]=useState(()=>localStorage.getItem('FP_Life_Assump_Tab') || 'position');
