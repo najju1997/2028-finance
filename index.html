@@ -201,21 +201,28 @@ const PLAN_NAME = 'My Plan';
 
 // ── Supabase Helper Functions ─────────────────────────────────────────────
 async function loadFromSupabase() {
+  // Add timeout to prevent hanging
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Supabase timeout')), 5000)
+  );
+  
   try {
-    const { data, error } = await supabase
+    const fetchPromise = supabase
       .from('finance_plans')
       .select('*')
       .eq('user_id', CURRENT_USER_ID)
       .eq('plan_name', PLAN_NAME)
       .single();
     
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+    
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('[Supabase] Load error:', error);
+      console.log('[v0] Supabase load error:', error);
       return null;
     }
     
     if (data) {
-      console.log('[Supabase] Loaded data from database');
+      console.log('[v0] Loaded data from Supabase');
       return {
         dates: data.dates || {},
         income: data.income || {},
@@ -230,9 +237,10 @@ async function loadFromSupabase() {
         extraOneoffs: data.extra_oneoffs || []
       };
     }
+    console.log('[v0] No data in Supabase, will use defaults');
     return null;
   } catch (e) {
-    console.error('[Supabase] Load exception:', e);
+    console.log('[v0] Supabase load failed:', e.message);
     return null;
   }
 }
@@ -260,13 +268,13 @@ async function saveToSupabase(A) {
       .upsert(payload, { onConflict: 'user_id,plan_name' });
     
     if (error) {
-      console.error('[Supabase] Save error:', error);
+      console.log('[v0] Supabase save error:', error);
       return false;
     }
-    console.log('[Supabase] Data saved successfully');
+    console.log('[v0] Saved to Supabase');
     return true;
   } catch (e) {
-    console.error('[Supabase] Save exception:', e);
+    console.log('[v0] Supabase save failed:', e.message);
     return false;
   }
 }
@@ -306,38 +314,58 @@ function FinanceProvider({children}){
 
   // Load from Supabase on mount
   useEffect(()=>{
+    let mounted=true;
     (async()=>{
       setLoading(true);
-      const dbData=await loadFromSupabase();
-      if(dbData){
-        // Merge with DEFAULTS to fill any missing fields
-        setA(prev=>({
-          ...DEFAULTS,
-          ...dbData,
-          dates:{...DEFAULTS.dates,...dbData.dates},
-          income:{...DEFAULTS.income,...dbData.income},
-          savings:{...DEFAULTS.savings,...dbData.savings},
-          expenses:{...DEFAULTS.expenses,...dbData.expenses},
-          childcare:{...DEFAULTS.childcare,...dbData.childcare},
-          tax:{...DEFAULTS.tax,...dbData.tax},
-          nepal:{...DEFAULTS.nepal,...dbData.nepal},
-          oneoff:{...DEFAULTS.oneoff,...dbData.oneoff},
-        }));
-      } else {
-        // No data in Supabase, try localStorage as fallback for migration
+      console.log('[v0] Starting data load...');
+      
+      // Try Supabase first
+      let dataLoaded=false;
+      try {
+        const dbData=await loadFromSupabase();
+        if(mounted && dbData){
+          console.log('[v0] Using Supabase data');
+          setA(prev=>({
+            ...DEFAULTS,
+            ...dbData,
+            dates:{...DEFAULTS.dates,...dbData.dates},
+            income:{...DEFAULTS.income,...dbData.income},
+            savings:{...DEFAULTS.savings,...dbData.savings},
+            expenses:{...DEFAULTS.expenses,...dbData.expenses},
+            childcare:{...DEFAULTS.childcare,...dbData.childcare},
+            tax:{...DEFAULTS.tax,...dbData.tax},
+            nepal:{...DEFAULTS.nepal,...dbData.nepal},
+            oneoff:{...DEFAULTS.oneoff,...dbData.oneoff},
+          }));
+          dataLoaded=true;
+        }
+      } catch(e) {
+        console.log('[v0] Supabase fetch failed:', e);
+      }
+      
+      // Fallback to localStorage if Supabase didn't work
+      if(mounted && !dataLoaded){
+        console.log('[v0] Trying localStorage fallback...');
         try{
           const s=localStorage.getItem('FinancePlan_A');
           if(s){
             const localData=JSON.parse(s);
             setA(localData);
-            // Migrate localStorage data to Supabase
-            await saveToSupabase(localData);
-            console.log('[Supabase] Migrated localStorage data to database');
+            console.log('[v0] Using localStorage data');
+            // Try to migrate to Supabase in background (don't await)
+            saveToSupabase(localData).then(ok=>console.log('[v0] Migration:', ok?'success':'failed'));
+          } else {
+            console.log('[v0] Using defaults');
           }
-        }catch(e){}
+        }catch(e){
+          console.log('[v0] localStorage failed, using defaults');
+        }
       }
-      setLoading(false);
+      
+      if(mounted) setLoading(false);
+      console.log('[v0] Data load complete');
     })();
+    return ()=>{mounted=false;};
   },[]);
 
   // Debounced save to Supabase when A changes
