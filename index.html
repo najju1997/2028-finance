@@ -341,6 +341,7 @@ function SyncProvider({children}) {
           // Hydrate localStorage from Supabase (source of truth)
           if(row.data.FinancePlan_A) localStorage.setItem('FinancePlan_A', JSON.stringify(row.data.FinancePlan_A));
           if(row.data.FinancePlan_D) localStorage.setItem('FinancePlan_D', JSON.stringify(row.data.FinancePlan_D));
+          if(row.data.FinancePlan_T) localStorage.setItem('FinancePlan_T', JSON.stringify(row.data.FinancePlan_T));
         } else {
           // First sign-in for this user: push current local state up
           await pushBlob(uid);
@@ -359,6 +360,7 @@ function SyncProvider({children}) {
     const blob = {
       FinancePlan_A: JSON.parse(localStorage.getItem('FinancePlan_A') || 'null'),
       FinancePlan_D: JSON.parse(localStorage.getItem('FinancePlan_D') || 'null'),
+      FinancePlan_T: JSON.parse(localStorage.getItem('FinancePlan_T') || 'null'),
     };
     const { error } = await window._sb.from('user_state')
       .upsert({ user_id: uid, data: blob, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
@@ -1981,7 +1983,7 @@ function LifePlannerConnected() {
   return React.createElement(LifePlanner, {startingCash});
 }
 
-const NAV = [{id:'projection',label:'🇦🇺 Projection By 2028'},{id:'life',label:'🏠 Life Plan'}];
+const NAV = [{id:'projection',label:'🇦🇺 Family Plan'},{id:'life',label:'🏠 Life Plan'},{id:'cashflow',label:'💳 Monthly Cash'}];
 
 function AppInner() {
   const [page,setPage] = useState(() => localStorage.getItem('FP_Main_Page') || 'projection');
@@ -1998,6 +2000,7 @@ function AppInner() {
     localStorage.removeItem('FP_Life_Res_Tab');
     localStorage.removeItem('FinancePlan_A');
     localStorage.removeItem('FinancePlan_D');
+    localStorage.removeItem('FinancePlan_T');
     window.location.reload();
   }
 
@@ -2029,7 +2032,8 @@ function AppInner() {
     ),
     React.createElement('main', {className:'main-content'},
       page==='projection' && React.createElement(Projection2028, null),
-      page==='life' && React.createElement(LifePlannerConnected, null)
+      page==='life' && React.createElement(LifePlannerConnected, null),
+      page==='cashflow' && React.createElement(CashflowTrackerConnected, null)
     )
   );
 }
@@ -2040,6 +2044,667 @@ function App() {
       React.createElement(AppInner, null)
     )
   );
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// CASHFLOW TRACKER MODULE
+// ═══════════════════════════════════════════════════════════════
+
+const CATS = {
+  'Groceries':      {color:'#4ade80', icon:'🛒'},
+  'Eating Out':     {color:'#fb923c', icon:'🍔'},
+  'Transport/Fuel': {color:'#60a5fa', icon:'⛽'},
+  'Utilities':      {color:'#a78bfa', icon:'💡'},
+  'Rent/Housing':   {color:'#f472b6', icon:'🏠'},
+  'Shopping':       {color:'#facc15', icon:'🛍️'},
+  'Healthcare':     {color:'#34d399', icon:'💊'},
+  'Entertainment':  {color:'#818cf8', icon:'🎮'},
+  'Tech':           {color:'#22d3ee', icon:'💻'},
+  'BNPL/StepPay':   {color:'#f87171', icon:'📱'},
+  'Income':         {color:'#22c55e', icon:'💰'},
+  'Transfers':      {color:'#6b7280', icon:'🔄'},
+  'Other':          {color:'#94a3b8', icon:'💸'},
+};
+
+const AUTO_RULES = [
+  {k:['WOOLWORTHS','WW METRO','WW ','COLES ','ALDI ','IGA ','COSTCO','MOONLIGHT BAZAAR','MOONLIGHT BUTCHERY','MOONLIGHT GROCERY','SAJILO NEPALESE','SAJILO ','LEKALI MEATS','ABRAHIM AL TAEI','HARRIS FARM','FOODWORKS','FRUIT MARKET'], cat:'Groceries'},
+  {k:['KFC ','MCDONALD','MCDONALDS','HUNGRY JACK','HJS ','NANDO','SUBWAY ','DOMINO','PIZZA ','BAKERY','CAFE ','COFFEE','RESTAURANT','NEPALESE GROCER','WESTMEAD CONVENIENCE','HJs '], cat:'Eating Out'},
+  {k:['APEX VILLAWOOD','SPEEDWAY','CALTEX','SHELL ','7-ELEVEN','7ELEVEN','AMPOL','LIBERTY','PETROL ','BP ','METRO PETROL','PUMA ENERGY'], cat:'Transport/Fuel'},
+  {k:['DODO ','DODO SERVICE','DODO POWER','AGL ','ORIGIN ENERGY','SYDNEY WATER','AUSGRID','OPTUS ','TELSTRA','VODAFONE','IINET','TPG ','NBN ','ENERGY AUST'], cat:'Utilities'},
+  {k:['DEFT PAYMENTS','DEFT PAYMENT'], cat:'Rent/Housing'},
+  {k:['Salary','SALARY','Direct Credit','ESSILOR AUSTRAL','LUXOTTICA RETAIL','PAYROLL','Fast Transfer From'], cat:'Income'},
+  {k:['Transfer to','Transfer from','BPAY Biller Refund','Transfer To'], cat:'Transfers'},
+  {k:['StepPay Repayment','STEPPAY PYMT','Afterpay ','AFTERPAY','ZIP PAY','KLARNA','HUMM '], cat:'BNPL/StepPay'},
+  {k:['KMART ','TARGET ','BIG W','MYER ','DAVID JONES','COTTON ON','AMAZON','EBAY ','BEST & LESS'], cat:'Shopping'},
+  {k:['PHARMACY','CHEMIST','MEDICAL','DOCTOR','DENTAL','HOSPITAL','MEDICARE','NIB ','MEDIBANK','BUPA ','CHEMIST WAREHOUSE'], cat:'Healthcare'},
+  {k:['NETFLIX','SPOTIFY','STAN ','DISNEY','YOUTUBE','STEAM ','HOYTS','CINEMA','AMAZON PRIME'], cat:'Entertainment'},
+  {k:['DIGITALOCEAN','CLOUDFLARE','AWS ','GOOGLE CLOUD','AZURE ','GITHUB ','VERCEL','LINODE','NAMECHEAP','GODADDY'], cat:'Tech'},
+];
+
+function autoCategory(desc) {
+  const d = (desc || '').toUpperCase();
+  for (const rule of AUTO_RULES) {
+    if (rule.k.some(k => d.includes(k.toUpperCase().trim()))) return rule.cat;
+  }
+  return 'Other';
+}
+
+function hashTxn(date, amount, desc) {
+  const s = date + '|' + amount + '|' + (desc || '').trim().slice(0, 40);
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) + h) + s.charCodeAt(i); h = h & h; }
+  return Math.abs(h).toString(36);
+}
+
+function detectAccount(rows) {
+  const joined = rows.map(r => r.description || '').join('\n').toUpperCase();
+  if (joined.includes('DEFT PAYMENT')) return 'Rent Account';
+  if (joined.includes('LUXOTTICA') || joined.includes('ESSILOR')) return 'Salary Account';
+  // Card = balance column mostly empty
+  const emptyBal = rows.filter(r => !r.balance || r.balance.trim() === '').length;
+  if (emptyBal > rows.length * 0.7) return 'Spending Card';
+  return 'Everyday Account';
+}
+
+function parseCommBankCSV(text, acct) {
+  const rows = [];
+  for (const line of text.split(/\r?\n/).filter(l => l.trim())) {
+    const parts = []; let inQ = false, cur = '';
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { parts.push(cur); cur = ''; }
+      else cur += c;
+    }
+    parts.push(cur);
+    if (parts.length < 3) continue;
+    const rawD = parts[0].trim(), rawA = parts[1].trim(), desc = (parts[2] || '').trim();
+    const balance = (parts[3] || '').trim();
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(rawD)) continue;
+    const [dd, mm, yyyy] = rawD.split('/');
+    const date = yyyy + '-' + mm.padStart(2, '0') + '-' + dd.padStart(2, '0');
+    const amount = parseFloat(rawA.replace(/[^0-9.\-]/g, ''));
+    if (isNaN(amount)) continue;
+    rows.push({ date, amount, description: desc, balance, account: acct || 'Unknown' });
+  }
+  return rows;
+}
+
+function isAutoHide(desc) {
+  return (desc || '').toUpperCase().includes('STEPPAY PYMT');
+}
+
+function isExpenseTxn(t) {
+  return !t.hidden && t.amount < 0 && t.category !== 'Income' && t.category !== 'Transfers';
+}
+
+function isIncomeTxn(t) {
+  return !t.hidden && t.amount > 0 && t.category === 'Income';
+}
+
+// ── Transaction Context ────────────────────────────────────────
+const TxnCtx = createContext(null);
+
+function TxnProvider({ children }) {
+  const { schedulePush, hydrated } = useSync();
+  const [T, setT] = useState(() => {
+    try { const s = localStorage.getItem('FinancePlan_T'); if (s) return JSON.parse(s); } catch (e) { }
+    return { transactions: [], budgets: {} };
+  });
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { const s = localStorage.getItem('FinancePlan_T'); if (s) setT(JSON.parse(s)); } catch (e) { }
+  }, [hydrated]);
+
+  useEffect(() => {
+    localStorage.setItem('FinancePlan_T', JSON.stringify(T));
+    schedulePush();
+  }, [T, schedulePush]);
+
+  const importTransactions = useCallback(newTxns => {
+    setT(prev => {
+      const ids = new Set((prev.transactions || []).map(t => t.id));
+      const added = newTxns.filter(t => !ids.has(t.id));
+      return { ...prev, transactions: [...(prev.transactions || []), ...added] };
+    });
+  }, []);
+
+  const updateCategory = useCallback((id, cat) => {
+    setT(prev => ({ ...prev, transactions: (prev.transactions || []).map(t => t.id === id ? { ...t, category: cat, manual: true } : t) }));
+  }, []);
+
+  const toggleHidden = useCallback(id => {
+    setT(prev => ({ ...prev, transactions: (prev.transactions || []).map(t => t.id === id ? { ...t, hidden: !t.hidden } : t) }));
+  }, []);
+
+  const updateBudget = useCallback((cat, amt) => {
+    setT(prev => ({ ...prev, budgets: { ...prev.budgets, [cat]: amt } }));
+  }, []);
+
+  const deleteMonth = useCallback(ym => {
+    setT(prev => ({ ...prev, transactions: (prev.transactions || []).filter(t => t.date.slice(0, 7) !== ym) }));
+  }, []);
+
+  const clearAll = useCallback(() => setT({ transactions: [], budgets: {} }), []);
+
+  return React.createElement(TxnCtx.Provider, {
+    value: { T, importTransactions, updateCategory, toggleHidden, updateBudget, deleteMonth, clearAll }
+  }, children);
+}
+
+const useTxn = () => useContext(TxnCtx);
+
+// ── Upload Zone ────────────────────────────────────────────────
+function UploadZone({ onDone }) {
+  const { T, importTransactions } = useTxn();
+  const [drag, setDrag] = useState(false);
+  const [previews, setPreviews] = useState([]);
+  const inputRef = useRef(null);
+
+  async function processFiles(flist) {
+    const results = [];
+    for (const file of [...flist]) {
+      if (!file.name.toLowerCase().endsWith('.csv')) continue;
+      const text = await file.text();
+      const raw = parseCommBankCSV(text, null);
+      if (!raw.length) continue;
+      const acct = detectAccount(raw);
+      const txns = raw.map(r => ({
+        id: hashTxn(r.date, r.amount, r.description),
+        date: r.date,
+        amount: r.amount,
+        description: r.description,
+        account: acct,
+        category: autoCategory(r.description),
+        hidden: isAutoHide(r.description),
+        manual: false,
+      }));
+      const existIds = new Set((T.transactions || []).map(t => t.id));
+      const dupes = txns.filter(t => existIds.has(t.id)).length;
+      results.push({ fname: file.name, txns, account: acct, total: txns.length, dupes, fresh: txns.length - dupes });
+    }
+    if (results.length) setPreviews(p => [...p, ...results]);
+  }
+
+  function renameAcct(i, name) {
+    setPreviews(p => p.map((f, j) => j !== i ? f : { ...f, account: name, txns: f.txns.map(t => ({ ...t, account: name })) }));
+  }
+
+  function removePrev(i) { setPreviews(p => p.filter((_, j) => j !== i)); }
+
+  function getCatCounts(txns) {
+    const acc = {};
+    txns.filter(t => !t.hidden).forEach(t => { acc[t.category] = (acc[t.category] || 0) + 1; });
+    return Object.entries(acc).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  }
+
+  function doImport() {
+    importTransactions(previews.flatMap(f => f.txns));
+    setPreviews([]);
+    if (onDone) onDone();
+  }
+
+  const totalFresh = previews.reduce((s, f) => s + f.fresh, 0);
+
+  return React.createElement('div', null,
+    // Drop zone
+    React.createElement('div', {
+      onDragOver: e => { e.preventDefault(); setDrag(true); },
+      onDragLeave: () => setDrag(false),
+      onDrop: e => { e.preventDefault(); setDrag(false); processFiles(e.dataTransfer.files); },
+      onClick: () => inputRef.current && inputRef.current.click(),
+      style: {
+        border: '2px dashed ' + (drag ? 'var(--gold)' : 'var(--border2)'),
+        borderRadius: 'var(--radius)', padding: '2rem 1.5rem', textAlign: 'center',
+        cursor: 'pointer', transition: 'all .2s', background: drag ? 'rgba(212,175,55,.07)' : 'var(--bg2)',
+        marginBottom: previews.length ? '1rem' : '0',
+      }
+    },
+      React.createElement('input', { ref: inputRef, type: 'file', accept: '.csv', multiple: true, style: { display: 'none' }, onChange: e => processFiles(e.target.files) }),
+      React.createElement('div', { style: { fontSize: '2rem', marginBottom: '.4rem' } }, drag ? '📥' : '📂'),
+      React.createElement('div', { style: { fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 'var(--t-md)', color: drag ? 'var(--gold)' : 'var(--text)', marginBottom: '.25rem' } },
+        drag ? 'Release to upload' : 'Drag & drop CommBank CSV files here'),
+      React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: 'var(--text3)' } },
+        'Click to browse  ·  Select multiple files at once  ·  All 4 CommBank accounts supported')
+    ),
+    // File preview cards
+    previews.length > 0 && React.createElement('div', null,
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '.5rem', marginBottom: '1rem' } },
+        ...previews.map((f, i) => React.createElement('div', {
+          key: i, style: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }
+        },
+          // Header row
+          React.createElement('div', { style: { padding: '.7rem 1rem', display: 'flex', gap: '.75rem', alignItems: 'center', flexWrap: 'wrap', background: 'var(--surface2)' } },
+            React.createElement('div', { style: { flex: 1, minWidth: '120px' } },
+              React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: 'var(--text3)', marginBottom: '.15rem', wordBreak: 'break-all' } }, f.fname),
+              React.createElement('div', { style: { display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'center' } },
+                React.createElement('span', { style: { fontSize: 'var(--t-sm)', fontWeight: 600, color: 'var(--text)' } }, f.total + ' rows'),
+                f.dupes > 0 && React.createElement('span', { style: { fontSize: 'var(--t-xs)', color: 'var(--gold)', background: 'rgba(212,175,55,.1)', padding: '.1rem .4rem', borderRadius: '.5rem' } }, f.dupes + ' dupes'),
+                React.createElement('span', { style: { fontSize: 'var(--t-xs)', fontWeight: 700, color: 'var(--green)', background: 'rgba(74,222,128,.1)', padding: '.1rem .4rem', borderRadius: '.5rem' } }, '+' + f.fresh + ' new'),
+              )
+            ),
+            // Account name input
+            React.createElement('div', { className: 'input-group', style: { margin: 0, minWidth: '155px', flex: '1 1 155px' } },
+              React.createElement('label', { className: 'input-label' }, 'Account name'),
+              React.createElement('input', { type: 'text', className: 'input-field', value: f.account, onChange: e => renameAcct(i, e.target.value) })
+            ),
+            React.createElement('button', { onClick: () => removePrev(i), title: 'Remove', style: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: '1rem', padding: '.25rem .4rem', flexShrink: 0 } }, '✕')
+          ),
+          // Category pill preview
+          React.createElement('div', { style: { padding: '.55rem 1rem', display: 'flex', gap: '.3rem', flexWrap: 'wrap' } },
+            ...getCatCounts(f.txns).map(([cat, n]) => {
+              const c = CATS[cat] || { color: '#94a3b8', icon: '•' };
+              return React.createElement('span', { key: cat, style: { fontSize: 'var(--t-xs)', padding: '.15rem .45rem', borderRadius: '1rem', background: c.color + '1a', color: c.color, border: '1px solid ' + c.color + '44' } }, c.icon + ' ' + cat + ' (' + n + ')');
+            })
+          )
+        ))
+      ),
+      // Import button
+      React.createElement('button', {
+        className: 'btn-primary', onClick: doImport,
+        style: { width: '100%', opacity: totalFresh === 0 ? .5 : 1, cursor: totalFresh === 0 ? 'not-allowed' : 'pointer' }
+      }, totalFresh > 0
+        ? '✓ Import ' + totalFresh + ' new transaction' + (totalFresh !== 1 ? 's' : '') + ' from ' + previews.length + ' file' + (previews.length !== 1 ? 's' : '')
+        : 'No new transactions — all duplicates')
+    )
+  );
+}
+
+// ── Summary Cards ──────────────────────────────────────────────
+function CfSummaryCards({ txns }) {
+  const income = txns.filter(isIncomeTxn).reduce((s, t) => s + t.amount, 0);
+  const expenses = txns.filter(isExpenseTxn).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const net = income - expenses;
+  const savRate = income > 0 ? (net / income) * 100 : 0;
+  return React.createElement('div', { className: 'stat-grid', style: { marginBottom: '1.5rem' } },
+    React.createElement('div', { className: 'stat-card highlight' },
+      React.createElement('div', { className: 'stat-label' }, 'Total Income'),
+      React.createElement('div', { className: 'stat-value' }, fmt(income)),
+      React.createElement('div', { className: 'stat-sub' }, 'Salary & credits')
+    ),
+    React.createElement('div', { className: 'stat-card' },
+      React.createElement('div', { className: 'stat-label' }, 'Total Expenses'),
+      React.createElement('div', { className: 'stat-value', style: { color: 'var(--red)' } }, fmt(expenses)),
+      React.createElement('div', { className: 'stat-sub' }, 'Excl. transfers')
+    ),
+    React.createElement('div', { className: 'stat-card' },
+      React.createElement('div', { className: 'stat-label' }, 'Net Cash Flow'),
+      React.createElement('div', { className: 'stat-value', style: { color: net >= 0 ? 'var(--green)' : 'var(--red)' } }, (net >= 0 ? '+' : '') + fmt(net)),
+      React.createElement('div', { className: 'stat-sub' }, net >= 0 ? '✓ Positive month' : '⚠ Overspent')
+    ),
+    React.createElement('div', { className: 'stat-card' },
+      React.createElement('div', { className: 'stat-label' }, 'Savings Rate'),
+      React.createElement('div', { className: 'stat-value', style: { color: savRate >= 20 ? 'var(--green)' : savRate >= 10 ? 'var(--gold)' : 'var(--red)' } }, savRate.toFixed(1) + '%'),
+      React.createElement('div', { className: 'stat-sub' }, savRate >= 20 ? 'On track (>20%)' : savRate >= 10 ? 'Could be higher' : 'Below 10% target')
+    )
+  );
+}
+
+// ── Spend by Category ──────────────────────────────────────────
+function SpendByCategory({ txns, budgets }) {
+  const catAmt = {};
+  txns.filter(isExpenseTxn).forEach(t => { catAmt[t.category] = (catAmt[t.category] || 0) + Math.abs(t.amount); });
+  const data = Object.entries(catAmt).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => ({
+    cat, amt: parseFloat(amt.toFixed(2)),
+    color: (CATS[cat] || { color: '#94a3b8' }).color,
+    budget: budgets[cat] || 0,
+  }));
+  const total = data.reduce((s, d) => s + d.amt, 0);
+  if (!data.length) return React.createElement('div', { className: 'chart-card' },
+    React.createElement('div', { className: 'chart-title' }, 'Spending by Category'),
+    React.createElement('div', { style: { color: 'var(--text3)', textAlign: 'center', padding: '2rem', fontSize: 'var(--t-sm)' } }, 'No expenses for this month')
+  );
+  return React.createElement('div', { className: 'chart-card' },
+    React.createElement('div', { className: 'chart-title' }, 'Spending by Category'),
+    React.createElement(ResponsiveContainer, { width: '100%', height: Math.max(200, data.length * 44) },
+      React.createElement(BarChart, { data, layout: 'vertical', margin: { top: 0, right: 70, left: 8, bottom: 0 } },
+        React.createElement(XAxis, { type: 'number', tickFormatter: v => '$' + (v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toFixed(0)), tick: { fill: 'var(--text3)', fontSize: 10 }, tickLine: false, axisLine: false }),
+        React.createElement(YAxis, { type: 'category', dataKey: 'cat', tick: { fill: 'var(--text2)', fontSize: 11 }, tickLine: false, axisLine: false, width: 110 }),
+        React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: 'var(--border)', horizontal: false }),
+        React.createElement(Tooltip, {
+          formatter: (v, n, p) => ['$' + v.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '  (' + (total > 0 ? (v / total * 100).toFixed(1) : 0) + '%)', 'Spent'],
+          contentStyle: { background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--t-xs)' }
+        }),
+        React.createElement(Bar, { dataKey: 'amt', name: 'Spent', radius: [0, 4, 4, 0] },
+          ...data.map((d, i) => React.createElement(Cell, { key: i, fill: d.color }))
+        )
+      )
+    ),
+    React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', paddingTop: '.5rem', borderTop: '1px solid var(--border)', marginTop: '.5rem' } },
+      React.createElement('span', { style: { fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 'var(--t-sm)' } }, 'Total: ' + fmt(total))
+    )
+  );
+}
+
+// ── Month Trend Chart ──────────────────────────────────────────
+function MonthTrend({ allTxns }) {
+  const months = [...new Set(allTxns.map(t => t.date.slice(0, 7)))].sort();
+  if (months.length < 2) return null;
+  const data = months.map(ym => {
+    const txns = allTxns.filter(t => t.date.slice(0, 7) === ym);
+    const income = txns.filter(isIncomeTxn).reduce((s, t) => s + t.amount, 0);
+    const expenses = txns.filter(isExpenseTxn).reduce((s, t) => s + Math.abs(t.amount), 0);
+    return {
+      month: new Date(ym + '-01').toLocaleDateString('en-AU', { month: 'short', year: '2-digit' }),
+      income: Math.round(income), expenses: Math.round(expenses), net: Math.round(income - expenses)
+    };
+  });
+  return React.createElement('div', { className: 'chart-card' },
+    React.createElement('div', { className: 'chart-title' }, 'Month-over-Month Trend'),
+    React.createElement(ResponsiveContainer, { width: '100%', height: 230 },
+      React.createElement(LineChart, { data, margin: { top: 8, right: 16, bottom: 0, left: 8 } },
+        React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: 'var(--border)' }),
+        React.createElement(XAxis, { dataKey: 'month', tick: { fill: 'var(--text3)', fontSize: 11 }, tickLine: false }),
+        React.createElement(YAxis, { tickFormatter: v => '$' + (Math.abs(v) / 1000).toFixed(1) + 'k', tick: { fill: 'var(--text3)', fontSize: 11 }, tickLine: false, axisLine: false }),
+        React.createElement(Tooltip, { formatter: (v, n) => [fmt(v), n], contentStyle: { background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--t-xs)' } }),
+        React.createElement(ReferenceLine, { y: 0, stroke: 'var(--text3)', strokeDasharray: '4 2' }),
+        React.createElement(Line, { type: 'monotone', dataKey: 'income', name: 'Income', stroke: 'var(--green)', strokeWidth: 2.5, dot: { r: 4, fill: 'var(--green)' } }),
+        React.createElement(Line, { type: 'monotone', dataKey: 'expenses', name: 'Expenses', stroke: 'var(--red)', strokeWidth: 2.5, dot: { r: 4, fill: 'var(--red)' } }),
+        React.createElement(Line, { type: 'monotone', dataKey: 'net', name: 'Net', stroke: 'var(--gold)', strokeWidth: 2, strokeDasharray: '5 3', dot: { r: 3, fill: 'var(--gold)' } }),
+        React.createElement(Legend, { wrapperStyle: { fontSize: 'var(--t-xs)', color: 'var(--text2)' } })
+      )
+    )
+  );
+}
+
+// ── AI Insights Panel ──────────────────────────────────────────
+function InsightsPanel({ txns, selectedMonth }) {
+  const [ins, setIns] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  useEffect(() => { setIns(null); setErr(null); }, [selectedMonth]);
+
+  async function generate() {
+    setLoading(true); setErr(null);
+    const catAmt = {};
+    txns.filter(isExpenseTxn).forEach(t => { catAmt[t.category] = (catAmt[t.category] || 0) + Math.abs(t.amount); });
+    const income = txns.filter(isIncomeTxn).reduce((s, t) => s + t.amount, 0);
+    const expenses = Object.values(catAmt).reduce((s, v) => s + v, 0);
+    const net = income - expenses;
+    const savRate = income > 0 ? net / income * 100 : 0;
+    const merchantAmt = {};
+    txns.filter(isExpenseTxn).forEach(t => {
+      const m = t.description.trim().replace(/\s+/g, ' ').slice(0, 30);
+      merchantAmt[m] = (merchantAmt[m] || 0) + Math.abs(t.amount);
+    });
+    const summary = {
+      month: selectedMonth,
+      income: parseFloat(income.toFixed(2)),
+      expenses: parseFloat(expenses.toFixed(2)),
+      net: parseFloat(net.toFixed(2)),
+      savingsRatePct: parseFloat(savRate.toFixed(1)),
+      categories: Object.entries(catAmt).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => ({ cat, amt: parseFloat(amt.toFixed(2)), pct: parseFloat((amt / expenses * 100).toFixed(1)) })),
+      topMerchants: Object.entries(merchantAmt).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m, a]) => ({ merchant: m, total: parseFloat(a.toFixed(2)) })),
+      accounts: [...new Set(txns.map(t => t.account))],
+      context: 'Australian family in Western Sydney. Renting. Has a child (Uziel). On visa pathway to PR. Weekly household budget assumption ~$1,300.'
+    };
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are a sharp personal finance analyst for an Australian household. Return ONLY a valid JSON object — no markdown fences, no text outside the JSON.',
+          messages: [{
+            role: 'user',
+            content: 'Analyse this monthly cashflow and return EXACTLY this JSON (fill with real numbers and specifics):\n{"headline":"punchy 1-sentence summary with a key $ number (max 14 words)","insights":[{"type":"positive","icon":"✅","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"warning","icon":"⚠️","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"tip","icon":"💡","title":"actionable tip","body":"concrete and specific 1-2 sentences"}],"recommendation":"single most impactful action for next month (1 sentence)"}\n\nData: ' + JSON.stringify(summary)
+          }]
+        })
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      const raw = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim();
+      setIns(JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()));
+    } catch (e) {
+      setErr('Could not generate insights: ' + e.message);
+    } finally { setLoading(false); }
+  }
+
+  const typeColor = { positive: 'var(--green)', warning: 'var(--gold)', tip: 'var(--blue)' };
+
+  return React.createElement('div', { className: 'chart-card' },
+    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.5rem', marginBottom: ins ? '1rem' : 0 } },
+      React.createElement('div', { className: 'chart-title', style: { margin: 0 } }, '🤖 AI Financial Insights'),
+      React.createElement('button', {
+        onClick: generate, disabled: loading,
+        style: { background: 'var(--gold)', color: '#0b0e14', border: 'none', borderRadius: 'var(--radius-sm)', padding: '.4rem 1rem', fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 'var(--t-xs)', cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }
+      }, loading ? '⏳ Analysing…' : ins ? '🔄 Regenerate' : '✨ Generate Insights')
+    ),
+    err && React.createElement('div', { style: { marginTop: '.75rem', color: 'var(--red)', fontSize: 'var(--t-xs)', padding: '.6rem .9rem', background: 'rgba(224,85,85,.08)', borderRadius: 'var(--radius-sm)' } }, err),
+    !ins && !loading && !err && React.createElement('div', { style: { color: 'var(--text3)', fontSize: 'var(--t-sm)', padding: '.75rem 0' } },
+      'Click Generate for AI-powered analysis of your ' + selectedMonth + ' spending.'),
+    ins && React.createElement('div', null,
+      React.createElement('div', { style: { padding: '.75rem 1rem', background: 'var(--bg2)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--gold)', marginBottom: '1rem', fontSize: 'var(--t-md)', fontWeight: 600, lineHeight: 1.4 } }, ins.headline),
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '.5rem', marginBottom: '.75rem' } },
+        ...(ins.insights || []).map((item, idx) => React.createElement('div', { key: idx, style: { padding: '.6rem .9rem', borderRadius: 'var(--radius-sm)', background: (typeColor[item.type] || '#94a3b8') + '12', border: '1px solid ' + (typeColor[item.type] || '#94a3b8') + '30', display: 'flex', gap: '.65rem', alignItems: 'flex-start' } },
+          React.createElement('span', { style: { fontSize: '1.1em', flexShrink: 0, marginTop: '.1rem' } }, item.icon),
+          React.createElement('div', null,
+            React.createElement('div', { style: { fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 'var(--t-sm)', color: typeColor[item.type] || 'var(--text2)', marginBottom: '.1rem' } }, item.title),
+            React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: 'var(--text2)', lineHeight: 1.55 } }, item.body)
+          )
+        ))
+      ),
+      React.createElement('div', { style: { padding: '.6rem .9rem', borderRadius: 'var(--radius-sm)', background: 'rgba(74,158,255,.08)', border: '1px solid rgba(74,158,255,.28)', display: 'flex', gap: '.6rem', alignItems: 'flex-start' } },
+        React.createElement('span', { style: { fontSize: '1em', flexShrink: 0 } }, '🎯'),
+        React.createElement('div', null,
+          React.createElement('div', { style: { fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 'var(--t-xs)', color: 'var(--blue)', marginBottom: '.1rem', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Next Month'),
+          React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: 'var(--text2)', lineHeight: 1.55 } }, ins.recommendation)
+        )
+      )
+    )
+  );
+}
+
+// ── Transaction Table ──────────────────────────────────────────
+function TransactionTable({ txns, onCategoryChange, onToggleHidden }) {
+  const [showHidden, setShowHidden] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterCat, setFilterCat] = useState('All');
+  const [filterAcct, setFilterAcct] = useState('All');
+  const [sortCol, setSortCol] = useState('date');
+  const [sortDir, setSortDir] = useState('desc');
+
+  const accounts = useMemo(() => ['All', ...new Set(txns.map(t => t.account))], [txns]);
+
+  const filtered = useMemo(() => {
+    let list = txns
+      .filter(t => showHidden || !t.hidden)
+      .filter(t => filterCat === 'All' || t.category === filterCat)
+      .filter(t => filterAcct === 'All' || t.account === filterAcct)
+      .filter(t => !search || t.description.toLowerCase().includes(search.toLowerCase()));
+    list.sort((a, b) => {
+      const va = sortCol === 'amount' ? Math.abs(a.amount) : a[sortCol] || '';
+      const vb = sortCol === 'amount' ? Math.abs(b.amount) : b[sortCol] || '';
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [txns, showHidden, filterCat, filterAcct, search, sortCol, sortDir]);
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('desc'); }
+  }
+
+  const STh = ({ col, label, align }) => React.createElement('th', {
+    onClick: () => toggleSort(col),
+    style: { cursor: 'pointer', userSelect: 'none', color: sortCol === col ? 'var(--gold)' : 'var(--text2)', textAlign: align || 'right', whiteSpace: 'nowrap' }
+  }, label + (sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''));
+
+  const expTotal = filtered.filter(isExpenseTxn).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const incTotal = filtered.filter(isIncomeTxn).reduce((s, t) => s + t.amount, 0);
+
+  return React.createElement('div', null,
+    // Filters
+    React.createElement('div', { style: { display: 'flex', gap: '.6rem', flexWrap: 'wrap', marginBottom: '.75rem', alignItems: 'center' } },
+      React.createElement('input', { type: 'text', className: 'input-field', placeholder: '🔍 Search…', value: search, onChange: e => setSearch(e.target.value), style: { flex: '1 1 160px', minWidth: '120px' } }),
+      React.createElement('select', { className: 'input-field', style: { flex: '0 1 140px', minWidth: '120px' }, value: filterCat, onChange: e => setFilterCat(e.target.value) },
+        React.createElement('option', { value: 'All' }, 'All categories'),
+        ...Object.keys(CATS).map(c => React.createElement('option', { key: c, value: c }, CATS[c].icon + ' ' + c))
+      ),
+      React.createElement('select', { className: 'input-field', style: { flex: '0 1 155px', minWidth: '120px' }, value: filterAcct, onChange: e => setFilterAcct(e.target.value) },
+        ...accounts.map(a => React.createElement('option', { key: a, value: a }, a === 'All' ? 'All accounts' : a))
+      ),
+      React.createElement('label', { style: { display: 'flex', alignItems: 'center', gap: '.35rem', fontSize: 'var(--t-xs)', color: 'var(--text2)', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' } },
+        React.createElement('input', { type: 'checkbox', checked: showHidden, onChange: e => setShowHidden(e.target.checked) }),
+        'Show hidden'
+      )
+    ),
+    // Summary line
+    React.createElement('div', { style: { display: 'flex', gap: '1rem', marginBottom: '.6rem', fontSize: 'var(--t-xs)', color: 'var(--text3)', flexWrap: 'wrap' } },
+      React.createElement('span', null, filtered.length + ' rows'),
+      expTotal > 0 && React.createElement('span', { style: { color: 'var(--red)' } }, 'Expenses: ' + fmt(expTotal)),
+      incTotal > 0 && React.createElement('span', { style: { color: 'var(--green)' } }, 'Income: ' + fmt(incTotal)),
+    ),
+    React.createElement('div', { className: 'table-wrap' },
+      React.createElement('table', { className: 'data-table' },
+        React.createElement('thead', null, React.createElement('tr', null,
+          React.createElement(STh, { col: 'date', label: 'Date', align: 'left' }),
+          React.createElement(STh, { col: 'description', label: 'Description', align: 'left' }),
+          React.createElement('th', { style: { textAlign: 'left' } }, 'Account'),
+          React.createElement(STh, { col: 'amount', label: 'Amount' }),
+          React.createElement(STh, { col: 'category', label: 'Category', align: 'left' }),
+          React.createElement('th', { style: { textAlign: 'center' } }, 'Vis'),
+        )),
+        React.createElement('tbody', null,
+          ...filtered.map(t => {
+            const catMeta = CATS[t.category] || { color: '#94a3b8', icon: '•' };
+            return React.createElement('tr', { key: t.id, style: { opacity: t.hidden ? .42 : 1 } },
+              React.createElement('td', { style: { textAlign: 'left', fontSize: 'var(--t-xs)', color: 'var(--text3)', whiteSpace: 'nowrap' } }, t.date),
+              React.createElement('td', { style: { textAlign: 'left', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 'var(--t-sm)' } },
+                t.description + (t.manual ? ' ✏️' : '')),
+              React.createElement('td', { style: { textAlign: 'left', fontSize: 'var(--t-xs)', color: 'var(--text3)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, t.account),
+              React.createElement('td', { style: { fontFamily: "'Syne',sans-serif", fontWeight: 700, color: t.amount > 0 ? 'var(--green)' : 'var(--text)', whiteSpace: 'nowrap' } },
+                (t.amount > 0 ? '+' : '') + fmt(t.amount)),
+              React.createElement('td', { style: { textAlign: 'left' } },
+                React.createElement('select', {
+                  value: t.category, onChange: e => onCategoryChange(t.id, e.target.value),
+                  style: { background: catMeta.color + '1a', color: catMeta.color, border: '1px solid ' + catMeta.color + '50', borderRadius: '1rem', padding: '.15rem .5rem', fontSize: 'var(--t-xs)', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", minWidth: '130px' }
+                },
+                  ...Object.keys(CATS).map(c => React.createElement('option', { key: c, value: c, style: { background: 'var(--surface2)', color: 'var(--text)' } }, CATS[c].icon + ' ' + c))
+                )
+              ),
+              React.createElement('td', { style: { textAlign: 'center' } },
+                React.createElement('button', { onClick: () => onToggleHidden(t.id), title: t.hidden ? 'Unhide' : 'Hide', style: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '.85em', color: t.hidden ? 'var(--gold)' : 'var(--text3)', padding: '.2rem .3rem' } },
+                  t.hidden ? '👁' : '🙈')
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+}
+
+// ── Budget Tab ─────────────────────────────────────────────────
+function BudgetTab({ txns, budgets, onUpdate }) {
+  const catAmt = {};
+  txns.filter(isExpenseTxn).forEach(t => { catAmt[t.category] = (catAmt[t.category] || 0) + Math.abs(t.amount); });
+  const expCats = Object.keys(CATS).filter(c => c !== 'Income' && c !== 'Transfers');
+  return React.createElement('div', null,
+    React.createElement('p', { style: { fontSize: 'var(--t-xs)', color: 'var(--text3)', marginBottom: '1.25rem' } },
+      'Set monthly budget targets per category. Progress bars show how much of your budget is used. Synced to cloud.'),
+    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(210px,100%),1fr))', gap: '.75rem' } },
+      ...expCats.map(cat => {
+        const c = CATS[cat] || { color: '#94a3b8', icon: '•' };
+        const spent = catAmt[cat] || 0;
+        const budget = budgets[cat] || 0;
+        const pct = budget > 0 ? Math.min(100, spent / budget * 100) : 0;
+        const over = budget > 0 && spent > budget;
+        return React.createElement('div', { key: cat, style: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '.8rem', borderLeft: '3px solid ' + c.color } },
+          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.4rem' } },
+            React.createElement('div', { style: { fontSize: 'var(--t-xs)', fontWeight: 700, color: c.color, fontFamily: "'Syne',sans-serif" } }, c.icon + ' ' + cat),
+            React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: spent > 0 ? (over ? 'var(--red)' : 'var(--green)') : 'var(--text3)' } }, spent > 0 ? fmt(spent) : '—')
+          ),
+          React.createElement('div', { style: { position: 'relative' } },
+            React.createElement('span', { style: { position: 'absolute', left: '.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gold)', fontSize: 'var(--t-sm)', pointerEvents: 'none' } }, '$'),
+            React.createElement('input', { type: 'number', className: 'input-field has-prefix', placeholder: 'Monthly target', min: 0, value: budget || '', onChange: e => { const v = parseFloat(e.target.value); onUpdate(cat, isNaN(v) ? 0 : v); } })
+          ),
+          budget > 0 && React.createElement('div', { style: { marginTop: '.5rem' } },
+            React.createElement('div', { style: { height: '5px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' } },
+              React.createElement('div', { style: { height: '100%', width: pct + '%', background: over ? 'var(--red)' : c.color, borderRadius: '3px', transition: 'width .4s' } })
+            ),
+            React.createElement('div', { style: { fontSize: 'var(--t-xs)', color: over ? 'var(--red)' : 'var(--text3)', marginTop: '.2rem' } },
+              Math.round(pct) + '%' + (over ? ' — over by ' + fmt(spent - budget) : ' of ' + fmt(budget)))
+          )
+        );
+      })
+    )
+  );
+}
+
+// ── Main Dashboard ─────────────────────────────────────────────
+function CashflowDashboard() {
+  const { T, updateCategory, toggleHidden, updateBudget, deleteMonth } = useTxn();
+  const allTxns = T.transactions || [];
+  const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0, 7)))].sort().reverse(), [allTxns]);
+  const [selMonth, setSelMonth] = useState(() => months[0] || '');
+  const [tab, setTab] = useState(() => { try { return localStorage.getItem('FP_CF_Tab') || 'overview'; } catch (e) { return 'overview'; } });
+  useEffect(() => { try { localStorage.setItem('FP_CF_Tab', tab); } catch (e) { } }, [tab]);
+  useEffect(() => { if (months.length > 0 && !months.includes(selMonth)) setSelMonth(months[0]); }, [months.join(',')]);
+
+  const monthTxns = useMemo(() => allTxns.filter(t => t.date.slice(0, 7) === selMonth), [allTxns, selMonth]);
+  const monthLabel = selMonth ? new Date(selMonth + '-01').toLocaleDateString('en-AU', { month: 'long', year: 'numeric' }) : '';
+  if (!months.length) return null;
+
+  const CF_TABS = [{ id: 'overview', label: '📊 Overview' }, { id: 'transactions', label: '🧾 Transactions' }, { id: 'budget', label: '🎯 Budget' }];
+
+  return React.createElement('div', null,
+    // Month selector bar
+    React.createElement('div', { style: { display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', alignItems: 'center' } },
+      React.createElement('span', { style: { fontSize: 'var(--t-xs)', color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginRight: '.25rem' } }, 'Month:'),
+      ...months.map(m => React.createElement('button', { key: m, className: 'subnav-btn' + (m === selMonth ? ' active' : ''), onClick: () => setSelMonth(m) },
+        new Date(m + '-01').toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
+      )),
+      React.createElement('button', { onClick: () => { if (confirm('Delete all ' + monthLabel + ' transactions?')) deleteMonth(selMonth); }, style: { marginLeft: 'auto', background: 'none', border: '1px solid var(--border)', color: 'var(--text3)', cursor: 'pointer', fontSize: 'var(--t-xs)', padding: '.3rem .6rem', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap' } }, '🗑️ Delete month')
+    ),
+    React.createElement(CfSummaryCards, { txns: monthTxns }),
+    React.createElement('nav', { className: 'subnav' },
+      ...CF_TABS.map(t => React.createElement('button', { key: t.id, className: 'subnav-btn' + (tab === t.id ? ' active' : ''), onClick: () => setTab(t.id) }, t.label))
+    ),
+    tab === 'overview' && React.createElement('div', null,
+      React.createElement(SpendByCategory, { txns: monthTxns, budgets: T.budgets || {} }),
+      React.createElement(MonthTrend, { allTxns }),
+      React.createElement(InsightsPanel, { txns: monthTxns, selectedMonth: monthLabel })
+    ),
+    tab === 'transactions' && React.createElement(TransactionTable, { txns: monthTxns, onCategoryChange: updateCategory, onToggleHidden: toggleHidden }),
+    tab === 'budget' && React.createElement(BudgetTab, { txns: monthTxns, budgets: T.budgets || {}, onUpdate: updateBudget })
+  );
+}
+
+// ── Top-level Cashflow Tracker ─────────────────────────────────
+function CashflowTracker() {
+  const { T, clearAll } = useTxn();
+  const [showUpload, setShowUpload] = useState(false);
+  const hasTxns = (T.transactions || []).length > 0;
+  return React.createElement('div', null,
+    React.createElement('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' } },
+      React.createElement('div', null,
+        React.createElement('h1', { className: 'page-title' }, 'Monthly Cash Flow'),
+        React.createElement('p', { className: 'page-subtitle' }, 'CommBank CSV import · Auto-categorised · AI insights · Synced')
+      ),
+      hasTxns && React.createElement('div', { style: { display: 'flex', gap: '.5rem', flexWrap: 'wrap' } },
+        React.createElement('button', { className: 'subnav-btn' + (showUpload ? ' active' : ''), onClick: () => setShowUpload(o => !o) }, showUpload ? '✕ Close' : '📂 Upload More Files'),
+        React.createElement('button', { onClick: () => { if (confirm('Delete ALL transaction data? This cannot be undone.')) clearAll(); }, style: { background: 'none', border: '1px solid var(--border)', color: 'var(--text3)', cursor: 'pointer', fontSize: 'var(--t-xs)', padding: '.4rem .75rem', borderRadius: 'var(--radius-sm)' } }, 'Clear All')
+      )
+    ),
+    (!hasTxns || showUpload) && React.createElement('div', { style: { marginBottom: '1.5rem' } },
+      React.createElement(UploadZone, { onDone: () => setShowUpload(false) })
+    ),
+    !hasTxns && React.createElement('div', { style: { textAlign: 'center', padding: '3rem 2rem', color: 'var(--text3)' } },
+      React.createElement('div', { style: { fontSize: '3rem', marginBottom: '1rem' } }, '📊'),
+      React.createElement('div', { style: { fontFamily: "'Syne',sans-serif", fontSize: 'var(--t-xl)', fontWeight: 700, marginBottom: '.5rem', color: 'var(--text)' } }, 'No transactions yet'),
+      React.createElement('div', { style: { fontSize: 'var(--t-sm)' } }, 'Upload your CommBank CSV exports to get started')
+    ),
+    hasTxns && React.createElement(CashflowDashboard, null)
+  );
+}
+
+function CashflowTrackerConnected() {
+  return React.createElement(TxnProvider, null, React.createElement(CashflowTracker, null));
 }
 
 window._appMounted = false;
