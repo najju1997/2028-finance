@@ -2558,26 +2558,6 @@ function CfSummaryCards({ txns, rec }) {
       React.createElement('div', {className:'stat-value',style:{color:savRate>=20?'var(--green)':savRate>=10?'var(--gold)':'var(--red)'}}, savRate.toFixed(1)+'%'),
       React.createElement('div', {className:'stat-sub'}, savRate>=20?'On track':savRate>=10?'Could be higher':'Below 10%')
     ),
-    steppayPairs > 0 && React.createElement('div', {className:'stat-card',style:{borderColor:'rgba(248,113,113,.4)'}},
-      React.createElement('div', {className:'stat-label'}, '🔁 StepPay Loans'),
-      React.createElement('div', {className:'stat-value',style:{color:'#f87171'}}, steppayPairs),
-      React.createElement('div', {className:'stat-sub'}, 'Reconciled (no double-count)')
-    ),
-    transferPairs > 0 && React.createElement('div', {className:'stat-card',style:{borderColor:'rgba(74,158,255,.4)'}},
-      React.createElement('div', {className:'stat-label'}, '🔗 Internal Transfers'),
-      React.createElement('div', {className:'stat-value',style:{color:'var(--blue)'}}, transferPairs),
-      React.createElement('div', {className:'stat-sub'}, 'Pairs matched across accounts')
-    ),
-    externalIn > 0 && React.createElement('div', {className:'stat-card'},
-      React.createElement('div', {className:'stat-label'}, 'External Inflow'),
-      React.createElement('div', {className:'stat-value',style:{color:'var(--green)'}}, fmt(externalIn)),
-      React.createElement('div', {className:'stat-sub'}, 'Unmatched incoming transfers')
-    ),
-    externalOut > 0 && React.createElement('div', {className:'stat-card'},
-      React.createElement('div', {className:'stat-label'}, 'External Outflow'),
-      React.createElement('div', {className:'stat-value',style:{color:'var(--gold)'}}, fmt(externalOut)),
-      React.createElement('div', {className:'stat-sub'}, 'Gifts / payments to others')
-    )
   );
 }
 
