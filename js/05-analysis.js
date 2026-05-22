@@ -7,6 +7,7 @@ const VARIABLE_CATS = ['Groceries','Eating Out','Transport/Fuel','Shopping','Ent
 
 // ── 1. Waterfall: Where did the money go? ──────────────────────
 function WaterfallChart({ txns, rec }) {
+  const { allCats } = useTxn();
   const income = txns.filter(t => isIncomeTxn(t, rec)).reduce((s,t)=>s+t.amount, 0);
   const catAmt = {};
   txns.filter(t => isExpenseTxn(t, rec)).forEach(t => { catAmt[t.category] = (catAmt[t.category]||0) + Math.abs(t.amount); });
@@ -22,7 +23,7 @@ function WaterfallChart({ txns, rec }) {
   for (const cat of orderedCats) {
     const v = catAmt[cat];
     running -= v;
-    data.push({name:cat, base:Math.max(0, running), value:v, kind:'expense', color:CATS[cat]?CATS[cat].color:'#94a3b8'});
+    data.push({name:cat, base:Math.max(0, running), value:v, kind:'expense', color:allCats[cat]?allCats[cat].color:'#94a3b8'});
   }
   const net = running;
   data.push({name:'Net', base:net < 0 ? 0 : 0, value:Math.abs(net), kind:net>=0?'positive':'negative', color:net>=0?'#22c55e':'#ef4444'});
@@ -152,8 +153,14 @@ function detectRecurring(allTxns) {
 }
 
 function RecurringDetector({ allTxns }) {
-  const recurring = useMemo(() => detectRecurring(allTxns), [allTxns]);
+  const { T, dismissRecurring, restoreRecurring, allCats } = useTxn();
+  const dismissed = T.dismissedRecurring || [];
+  const [showDismissed, setShowDismissed] = useState(false);
+  const allRecurring = useMemo(() => detectRecurring(allTxns), [allTxns]);
+  const recurring = useMemo(() => allRecurring.filter(r => !dismissed.includes(r.merchant)), [allRecurring, dismissed]);
+  const dismissedItems = useMemo(() => allRecurring.filter(r => dismissed.includes(r.merchant)), [allRecurring, dismissed]);
   const monthsAvailable = new Set(allTxns.map(t => t.date.slice(0,7))).size;
+
   if (monthsAvailable < 2) {
     return React.createElement('div', {className:'chart-card'},
       React.createElement('div', {className:'chart-title'}, '🔁 Recurring Subscriptions'),
@@ -161,15 +168,82 @@ function RecurringDetector({ allTxns }) {
         'Upload at least 2 months of data to detect recurring charges.')
     );
   }
-  if (recurring.length === 0) {
+  if (recurring.length === 0 && dismissedItems.length === 0) {
     return React.createElement('div', {className:'chart-card'},
       React.createElement('div', {className:'chart-title'}, '🔁 Recurring Subscriptions'),
       React.createElement('div', {style:{padding:'1.5rem',textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)'}},
         'No clear recurring charges detected.')
     );
   }
+
   const totalAnnual = recurring.reduce((s,r) => s+r.annualEstimate, 0);
   const totalMonthly = totalAnnual / 12;
+
+  const btnDelStyle = {background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:'1rem',padding:'0 .25rem',lineHeight:1,borderRadius:'var(--radius-sm)',transition:'color .15s'};
+  const btnRestoreStyle = {background:'none',border:'1px solid var(--text3)',cursor:'pointer',color:'var(--text3)',fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'var(--radius-sm)'};
+
+  const activeTable = React.createElement('div', {className:'table-wrap'},
+    React.createElement('table', {className:'data-table'},
+      React.createElement('thead', null, React.createElement('tr', null,
+        React.createElement('th', {style:{textAlign:'left'}}, 'Merchant'),
+        React.createElement('th', {style:{textAlign:'left'}}, 'Category'),
+        React.createElement('th', null, 'Freq'),
+        React.createElement('th', null, 'Avg'),
+        React.createElement('th', null, 'Annual'),
+        React.createElement('th', {style:{textAlign:'left'}}, 'Last seen'),
+        React.createElement('th', null, ''),
+      )),
+      React.createElement('tbody', null,
+        ...recurring.slice(0, 25).map((r,i) => {
+          const c = allCats[r.category] || {color:'#94a3b8',icon:'•'};
+          return React.createElement('tr', {key:i},
+            React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-sm)',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, r.merchant),
+            React.createElement('td', {style:{textAlign:'left'}},
+              React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, c.icon+' '+r.category)
+            ),
+            React.createElement('td', {style:{fontSize:'var(--t-xs)',color:'var(--text2)'}}, r.freqLabel),
+            React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:600}}, fmt(r.avgAmount)),
+            React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,color:'var(--red)'}}, fmt(r.annualEstimate)),
+            React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-xs)',color:'var(--text3)'}}, r.lastSeen),
+            React.createElement('td', {style:{textAlign:'center'}},
+              React.createElement('button', {
+                style:btnDelStyle,
+                title:'Dismiss from list',
+                onClick:() => dismissRecurring(r.merchant)
+              }, '✕')
+            ),
+          );
+        })
+      )
+    )
+  );
+
+  const dismissedSection = dismissedItems.length > 0 && React.createElement('div', {style:{marginTop:'1rem'}},
+    React.createElement('button', {
+      onClick:() => setShowDismissed(v => !v),
+      style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:'var(--t-xs)',padding:0,display:'flex',alignItems:'center',gap:'.3rem'}
+    }, (showDismissed ? '▾' : '▸') + ' ' + dismissedItems.length + ' dismissed'),
+    showDismissed && React.createElement('div', {className:'table-wrap',style:{marginTop:'.5rem',opacity:.7}},
+      React.createElement('table', {className:'data-table'},
+        React.createElement('tbody', null,
+          ...dismissedItems.map((r,i) => {
+            const c = allCats[r.category] || {color:'#94a3b8',icon:'•'};
+            return React.createElement('tr', {key:i,style:{opacity:.6}},
+              React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-sm)',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',textDecoration:'line-through'}}, r.merchant),
+              React.createElement('td', {style:{textAlign:'left'}},
+                React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, c.icon+' '+r.category)
+              ),
+              React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:600,color:'var(--text3)'}}, fmt(r.avgAmount)),
+              React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",color:'var(--text3)'}}, fmt(r.annualEstimate)),
+              React.createElement('td', null,
+                React.createElement('button', {style:btnRestoreStyle, onClick:() => restoreRecurring(r.merchant)}, 'Restore')
+              ),
+            );
+          })
+        )
+      )
+    )
+  );
 
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:'.5rem',marginBottom:'.75rem'}},
@@ -183,34 +257,11 @@ function RecurringDetector({ allTxns }) {
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, '≈ ' + fmt(totalMonthly) + '/month')
       )
     ),
-    React.createElement('div', {className:'table-wrap'},
-      React.createElement('table', {className:'data-table'},
-        React.createElement('thead', null, React.createElement('tr', null,
-          React.createElement('th', {style:{textAlign:'left'}}, 'Merchant'),
-          React.createElement('th', {style:{textAlign:'left'}}, 'Category'),
-          React.createElement('th', null, 'Freq'),
-          React.createElement('th', null, 'Avg'),
-          React.createElement('th', null, 'Annual'),
-          React.createElement('th', {style:{textAlign:'left'}}, 'Last seen'),
-        )),
-        React.createElement('tbody', null,
-          ...recurring.slice(0, 25).map((r,i) => {
-            const c = CATS[r.category] || {color:'#94a3b8',icon:'•'};
-            return React.createElement('tr', {key:i},
-              React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-sm)',maxWidth:'220px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, r.merchant),
-              React.createElement('td', {style:{textAlign:'left'}},
-                React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, c.icon+' '+r.category)
-              ),
-              React.createElement('td', {style:{fontSize:'var(--t-xs)',color:'var(--text2)'}}, r.freqLabel),
-              React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:600}}, fmt(r.avgAmount)),
-              React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,color:'var(--red)'}}, fmt(r.annualEstimate)),
-              React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-xs)',color:'var(--text3)'}}, r.lastSeen),
-            );
-          })
-        )
-      )
-    ),
-    recurring.length > 25 && React.createElement('div', {style:{textAlign:'center',color:'var(--text3)',fontSize:'var(--t-xs)',marginTop:'.5rem'}}, '+ ' + (recurring.length-25) + ' more')
+    recurring.length === 0
+      ? React.createElement('div', {style:{padding:'1rem 0',textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)'}}, 'All subscriptions dismissed.')
+      : activeTable,
+    recurring.length > 25 && React.createElement('div', {style:{textAlign:'center',color:'var(--text3)',fontSize:'var(--t-xs)',marginTop:'.5rem'}}, '+ ' + (recurring.length-25) + ' more'),
+    dismissedSection
   );
 }
 
@@ -296,17 +347,72 @@ function BNPLExposure({ allTxns, rec }) {
 }
 
 // ── 5. Cash Runway ─────────────────────────────────────────────
-function CashRunway({ txns, rec }) {
+function CashRunway({ allTxns, rec }) {
+  const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0,7)))].sort().reverse(), [allTxns]);
+  const [mode, setMode] = useState('month');
+  const [selMonth, setSelMonth] = useState(() => months[0] || '');
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
+
+  useEffect(() => {
+    if (months.length > 0 && !months.includes(selMonth)) setSelMonth(months[0]);
+  }, [months.join(',')]);
+
+  const { txns, days } = useMemo(() => {
+    if (mode === 'all') {
+      const dates = allTxns.map(t => t.date).sort();
+      const d = dates.length >= 2 ? Math.max(1, Math.round((new Date(dates[dates.length-1]) - new Date(dates[0])) / 86400000) + 1) : 30;
+      return { txns: allTxns, days: d };
+    }
+    if (mode === 'range') {
+      const filtered = allTxns.filter(t => (!rangeFrom || t.date >= rangeFrom) && (!rangeTo || t.date <= rangeTo));
+      const d = rangeFrom && rangeTo ? Math.max(1, Math.round((new Date(rangeTo) - new Date(rangeFrom)) / 86400000) + 1) : 30;
+      return { txns: filtered, days: d };
+    }
+    return { txns: allTxns.filter(t => t.date.slice(0,7) === selMonth), days: 30 };
+  }, [mode, selMonth, rangeFrom, rangeTo, allTxns]);
+
   const income = txns.filter(t => isIncomeTxn(t, rec)).reduce((s,t)=>s+t.amount, 0);
   const expenses = txns.filter(t => isExpenseTxn(t, rec)).reduce((s,t)=>s+Math.abs(t.amount), 0);
   const net = income - expenses;
-  const dailyBurn = expenses > 0 ? expenses / 30 : 0;
-  const monthlyDeficit = net < 0 ? Math.abs(net) : 0;
+  const dailyBurn = expenses > 0 ? expenses / days : 0;
+  const deficit = net < 0 ? Math.abs(net) : 0;
+  const periodLabel = mode === 'month' ? 'month' : 'period';
+  const monthlyAvgNet = mode !== 'month' ? net / Math.max(1, days / 30) : net;
+
+  const modeBtnStyle = active => ({
+    padding:'.3rem .7rem', fontSize:'var(--t-xs)', borderRadius:'var(--radius-sm)', cursor:'pointer', border:'1px solid var(--border)',
+    background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)', fontWeight: active ? 600 : 400,
+    transition:'background .15s,color .15s'
+  });
+
+  const periodSelector = React.createElement('div', {style:{marginBottom:'1rem'}},
+    React.createElement('div', {style:{display:'flex',gap:'.4rem',flexWrap:'wrap',alignItems:'center',marginBottom:'.6rem'}},
+      React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginRight:'.2rem'}}, 'Period:'),
+      React.createElement('button', {style:modeBtnStyle(mode==='month'), onClick:()=>setMode('month')}, 'Month'),
+      React.createElement('button', {style:modeBtnStyle(mode==='range'), onClick:()=>setMode('range')}, 'Date Range'),
+      React.createElement('button', {style:modeBtnStyle(mode==='all'), onClick:()=>setMode('all')}, 'All Time'),
+    ),
+    mode === 'month' && React.createElement('select', {
+      className:'input-field',
+      style:{width:'auto',minWidth:'170px',padding:'.3rem .5rem',fontSize:'var(--t-xs)'},
+      value:selMonth, onChange:e=>setSelMonth(e.target.value)
+    }, ...months.map(m => React.createElement('option', {key:m,value:m},
+      new Date(m+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'})))),
+    mode === 'range' && React.createElement('div', {style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
+      React.createElement('input', {type:'date',className:'input-field',style:{width:'auto',padding:'.3rem .5rem',fontSize:'var(--t-xs)'},value:rangeFrom,onChange:e=>setRangeFrom(e.target.value)}),
+      React.createElement('span', {style:{color:'var(--text3)',fontSize:'var(--t-xs)'}}, '→'),
+      React.createElement('input', {type:'date',className:'input-field',style:{width:'auto',padding:'.3rem .5rem',fontSize:'var(--t-xs)'},value:rangeTo,onChange:e=>setRangeTo(e.target.value)}),
+    ),
+    mode === 'all' && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}},
+      days + ' days · ' + months.length + ' months of data')
+  );
 
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {className:'chart-title'}, '⏱ Cash Burn Rate'),
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'1rem',marginTop:'-.5rem'}},
       'How fast money is leaving your accounts'),
+    periodSelector,
     React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(180px,100%),1fr))',gap:'.75rem',marginBottom:'1rem'}},
       React.createElement('div', {style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'.8rem'}},
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:'.25rem'}}, 'Daily spending'),
@@ -320,33 +426,35 @@ function CashRunway({ txns, rec }) {
       ),
       net >= 0
         ? React.createElement('div', {style:{background:'rgba(74,222,128,.1)',border:'1px solid var(--green)',borderRadius:'var(--radius-sm)',padding:'.8rem'}},
-            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--green)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:'.25rem'}}, 'Monthly surplus'),
+            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--green)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:'.25rem'}}, mode==='month'?'Monthly surplus':'Period surplus'),
             React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'1.6rem',color:'var(--green)'}}, '+'+fmt(net)),
-            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'leftover after expenses')
+            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}},
+              mode !== 'month' ? '≈ '+fmt(monthlyAvgNet)+'/month avg' : 'leftover after expenses')
           )
         : React.createElement('div', {style:{background:'rgba(224,85,85,.1)',border:'1px solid var(--red)',borderRadius:'var(--radius-sm)',padding:'.8rem'}},
-            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--red)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:'.25rem'}}, 'Monthly deficit'),
-            React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'1.6rem',color:'var(--red)'}}, '-'+fmt(monthlyDeficit)),
-            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'short every month')
+            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--red)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:'.25rem'}}, mode==='month'?'Monthly deficit':'Period deficit'),
+            React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'1.6rem',color:'var(--red)'}}, '-'+fmt(deficit)),
+            React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}},
+              mode !== 'month' ? '≈ '+fmt(Math.abs(monthlyAvgNet))+'/month avg' : 'short every month')
           )
     ),
-    // Bottom insight: brutal truth
     net < 0 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--red)',borderRadius:'var(--radius-sm)'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--red)',marginBottom:'.25rem'}}, '⚠ Cashflow alert'),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
-        'You spent ' + fmt(monthlyDeficit) + ' more than you earned this month. If this pattern continues for 12 months, that\'s ' + fmt(monthlyDeficit*12) + ' coming from savings, borrowing, or other transfers. ',
-        'To break even, either earn ' + fmt(monthlyDeficit) + '/month more, or cut ' + fmt(monthlyDeficit) + '/month from spending.'
-      )
+        'You spent ' + fmt(deficit) + ' more than you earned this ' + periodLabel + '. ' +
+        (mode === 'month' ? 'If this pattern continues for 12 months, that\'s ' + fmt(deficit*12) + ' coming from savings or borrowing. ' : '') +
+        'To break even, either earn ' + fmt(deficit) + ' more or cut ' + fmt(deficit) + ' from spending.')
     ),
-    net >= 0 && net < income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--gold)',borderRadius:'var(--radius-sm)'}},
+    net >= 0 && income > 0 && net < income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--gold)',borderRadius:'var(--radius-sm)'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--gold)',marginBottom:'.25rem'}}, '⚡ Tight margins'),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
-        'You\'re only saving ' + (net/income*100).toFixed(1) + '% of income — any unexpected expense (car repair, medical, dental) would push this month negative. Healthy buffer is 10-20% surplus.')
+        'Only saving ' + (net/income*100).toFixed(1) + '% of income this ' + periodLabel + ' — any unexpected expense would push you negative. Healthy buffer is 10-20% surplus.')
     ),
-    net >= income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--green)',borderRadius:'var(--radius-sm)'}},
+    net >= 0 && income > 0 && net >= income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--green)',borderRadius:'var(--radius-sm)'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--green)',marginBottom:'.25rem'}}, '✓ Healthy surplus'),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
-        'Saving ' + fmt(net) + '/month at ' + (net/income*100).toFixed(1) + '% of income. Over a year that\'s ' + fmt(net*12) + ' — direct that to your house deposit, emergency fund, or Nepal goals.')
+        'Saving ' + fmt(net) + ' at ' + (net/income*100).toFixed(1) + '% of income this ' + periodLabel +
+        (mode === 'month' ? '. Over a year that\'s ' + fmt(net*12) + ' — direct that to your house deposit, emergency fund, or Nepal goals.' : '.'))
     )
   );
 }
@@ -354,7 +462,7 @@ function CashRunway({ txns, rec }) {
 // ── Main Analysis Tab ──────────────────────────────────────────
 function AnalysisTab({ txns, rec, allTxns }) {
   return React.createElement('div', null,
-    React.createElement(CashRunway, {txns, rec}),
+    React.createElement(CashRunway, {allTxns, rec}),
     React.createElement(WaterfallChart, {txns, rec}),
     React.createElement(FixedVsVariable, {txns, rec}),
 

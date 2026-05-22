@@ -254,6 +254,20 @@ function TxnProvider({ children }) {
 
   const rec = useMemo(() => reconcileAll(T.transactions || []), [T.transactions]);
 
+  const allCats = useMemo(() => {
+    const extra = {};
+    (T.customCats || []).forEach(c => { extra[c.name] = {color: c.color, icon: c.icon, kind: 'expense'}; });
+    return {...CATS, ...extra};
+  }, [T.customCats]);
+  const allExpenseCats = useMemo(() => Object.keys(allCats).filter(c => allCats[c].kind === 'expense'), [allCats]);
+
+  const addCategory = useCallback((name, color, icon) => {
+    setT(prev => ({...prev, customCats: [...(prev.customCats||[]).filter(c=>c.name!==name), {name, color, icon}]}));
+  }, []);
+  const removeCategory = useCallback(name => {
+    setT(prev => ({...prev, customCats: (prev.customCats||[]).filter(c=>c.name!==name)}));
+  }, []);
+
   const importTransactions = useCallback(newTxns => {
     setT(prev => {
       const ids = new Set((prev.transactions||[]).map(t => t.id));
@@ -289,9 +303,15 @@ function TxnProvider({ children }) {
     setT(prev => ({ ...prev, transactions: (prev.transactions||[]).filter(t => t.date.slice(0,7)!==ym) }));
   }, []);
   const clearAll = useCallback(() => setT({ transactions:[], budgets:{} }), []);
+  const dismissRecurring = useCallback(merchant => {
+    setT(prev => ({ ...prev, dismissedRecurring: [...new Set([...(prev.dismissedRecurring||[]), merchant])] }));
+  }, []);
+  const restoreRecurring = useCallback(merchant => {
+    setT(prev => ({ ...prev, dismissedRecurring: (prev.dismissedRecurring||[]).filter(m => m !== merchant) }));
+  }, []);
 
   return React.createElement(TxnCtx.Provider, {
-    value: { T, rec, importTransactions, addManual, updateCategory, bulkUpdateCategory, bulkSetHidden, bulkDelete, toggleHidden, updateBudget, deleteMonth, clearAll }
+    value: { T, rec, allCats, allExpenseCats, importTransactions, addManual, updateCategory, bulkUpdateCategory, bulkSetHidden, bulkDelete, toggleHidden, updateBudget, deleteMonth, clearAll, dismissRecurring, restoreRecurring, addCategory, removeCategory }
   }, children);
 }
 
@@ -399,7 +419,7 @@ function UploadZone({ onDone }) {
 // Manual Add Modal
 // ═══════════════════════════════════════════════════════════════
 function ManualAddModal({ accounts, onClose }) {
-  const { addManual } = useTxn();
+  const { addManual, allCats, allExpenseCats } = useTxn();
   const [date, setDate] = useState(() => new Date().toISOString().slice(0,10));
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
@@ -437,7 +457,7 @@ function ManualAddModal({ accounts, onClose }) {
       ),
       type === 'expense' && React.createElement('div', {className:'input-group',style:{marginBottom:'1rem'}}, React.createElement('label',{className:'input-label'},'Category'),
         React.createElement('select',{className:'input-field',value:category,onChange:e=>setCategory(e.target.value)},
-          ...EXPENSE_CATS.map(c => React.createElement('option',{key:c,value:c},CATS[c].icon+' '+c))
+          ...allExpenseCats.map(c => React.createElement('option',{key:c,value:c},(allCats[c]||{icon:'•'}).icon+' '+c))
         )
       ),
       React.createElement('div', {style:{display:'flex',gap:'.5rem'}},
@@ -502,10 +522,11 @@ function CfSummaryCards({ txns, rec }) {
 // Spend by Category
 // ═══════════════════════════════════════════════════════════════
 function SpendByCategory({ txns, rec, budgets, onDrillCategory }) {
+  const { allCats } = useTxn();
   const catAmt = {};
   txns.filter(t => isExpenseTxn(t, rec)).forEach(t => { catAmt[t.category]=(catAmt[t.category]||0)+Math.abs(t.amount); });
   const data = Object.entries(catAmt).sort((a,b) => b[1]-a[1]).map(([cat,amt]) => ({
-    cat, amt:parseFloat(amt.toFixed(2)), color:(CATS[cat]||{color:'#94a3b8'}).color, budget:budgets[cat]||0
+    cat, amt:parseFloat(amt.toFixed(2)), color:(allCats[cat]||{color:'#94a3b8'}).color, budget:budgets[cat]||0
   }));
   const total = data.reduce((s,d) => s+d.amt, 0);
   if (!data.length) return React.createElement('div', {className:'chart-card'},
@@ -628,7 +649,7 @@ function InsightsPanel({ txns, rec, selectedMonth }) {
 // Transaction Table
 // ═══════════════════════════════════════════════════════════════
 function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }) {
-  const { updateCategory, toggleHidden, bulkUpdateCategory, bulkSetHidden, bulkDelete } = useTxn();
+  const { updateCategory, toggleHidden, bulkUpdateCategory, bulkSetHidden, bulkDelete, allCats } = useTxn();
   const [showHidden, setShowHidden] = useState(false);
   const [search, setSearch] = useState('');
   const [filterAcct, setFilterAcct] = useState('All');
@@ -681,7 +702,7 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
       ),
       React.createElement('select', {className:'input-field',style:{flex:'0 1 150px',minWidth:'130px'},value:filterCat,onChange:e=>setFilterCat(e.target.value)},
         React.createElement('option', {value:'All'}, 'All categories'),
-        ...Object.keys(CATS).map(c => React.createElement('option',{key:c,value:c},CATS[c].icon+' '+c))
+        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},allCats[c].icon+' '+c))
       ),
       React.createElement('select', {className:'input-field',style:{flex:'0 1 150px',minWidth:'130px'},value:filterAcct,onChange:e=>setFilterAcct(e.target.value)},
         ...accounts.map(a => React.createElement('option',{key:a,value:a},a==='All'?'All accounts':a))
@@ -694,7 +715,7 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
       React.createElement('span', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--gold)'}}, selected.size+' selected'),
       React.createElement('select', {style:{background:'var(--surface)',color:'var(--text)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.25rem .5rem',fontSize:'var(--t-xs)',cursor:'pointer'},onChange:e=>{if(e.target.value){bulkChangeCat(e.target.value);e.target.value='';}}, defaultValue:''},
         React.createElement('option', {value:'',disabled:true}, '↳ Change category…'),
-        ...Object.keys(CATS).map(c => React.createElement('option',{key:c,value:c},CATS[c].icon+' '+c))
+        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},allCats[c].icon+' '+c))
       ),
       React.createElement('button', {onClick:()=>bulkHide(true),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, '🙈 Hide'),
       React.createElement('button', {onClick:()=>bulkHide(false),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, '👁 Unhide'),
@@ -720,7 +741,7 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
         )),
         React.createElement('tbody', null,
           ...filtered.map(t => {
-            const catMeta = CATS[t.category]||{color:'#94a3b8',icon:'•'};
+            const catMeta = allCats[t.category]||{color:'#94a3b8',icon:'•'};
             const reconciled = isReconciled(t, rec);
             const recInfo = rec && rec.get(t.id);
             return React.createElement('tr', {key:t.id,style:{opacity:t.hidden?.42:1,background:selected.has(t.id)?'rgba(212,175,55,.08)':undefined}},
@@ -735,7 +756,7 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
               React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,color:reconciled?'var(--text3)':(t.amount>0?'var(--green)':'var(--text)'),whiteSpace:'nowrap',textDecoration:reconciled?'line-through':'none'}}, (t.amount>0?'+':'')+fmt(t.amount)),
               React.createElement('td', {style:{textAlign:'left'}},
                 React.createElement('select', {value:t.category,onChange:e=>updateCategory(t.id,e.target.value),style:{background:catMeta.color+'1a',color:catMeta.color,border:'1px solid '+catMeta.color+'50',borderRadius:'1rem',padding:'.15rem .5rem',fontSize:'var(--t-xs)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",width:'100%',maxWidth:'150px'}},
-                  ...Object.keys(CATS).map(c => React.createElement('option',{key:c,value:c,style:{background:'var(--surface2)',color:'var(--text)'}},CATS[c].icon+' '+c))
+                  ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c,style:{background:'var(--surface2)',color:'var(--text)'}},allCats[c].icon+' '+c))
                 )
               ),
               React.createElement('td', {className:'cf-col-vis',style:{textAlign:'center'}}, React.createElement('button', {onClick:()=>toggleHidden(t.id),title:t.hidden?'Unhide':'Hide',style:{background:'none',border:'none',cursor:'pointer',fontSize:'.85em',color:t.hidden?'var(--gold)':'var(--text3)',padding:'.2rem .3rem'}}, t.hidden?'👁':'🙈'))
@@ -801,14 +822,61 @@ function ReconciliationAudit({ txns, rec }) {
 // ═══════════════════════════════════════════════════════════════
 // Budget Tab
 // ═══════════════════════════════════════════════════════════════
+const CAT_PALETTE = ['#22c55e','#f97316','#60a5fa','#a78bfa','#f472b6','#06b6d4','#eab308','#34d399','#facc15','#818cf8','#22d3ee','#f87171','#fb923c','#4ade80','#e879f9','#94a3b8'];
+
 function BudgetTab({ txns, rec, budgets, onUpdate }) {
+  const { allCats, allExpenseCats, addCategory, removeCategory, T } = useTxn();
   const catAmt = {};
   txns.filter(t=>isExpenseTxn(t,rec)).forEach(t => { catAmt[t.category]=(catAmt[t.category]||0)+Math.abs(t.amount); });
+
+  const [showManage, setShowManage] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState(CAT_PALETTE[0]);
+  const [newIcon, setNewIcon] = useState('💸');
+
+  function submitNew() {
+    const name = newName.trim();
+    if (!name) return;
+    if (allCats[name]) { alert('Category "'+name+'" already exists.'); return; }
+    addCategory(name, newColor, newIcon);
+    setNewName('');
+  }
+
+  const customCats = T.customCats || [];
+
+  const manageSection = React.createElement('div', {style:{marginBottom:'1.5rem',padding:'1rem',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)'}},
+    React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom: showManage ? '.75rem' : 0}},
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--text)'}}, '🏷️ Custom Categories'),
+      React.createElement('button', {
+        onClick:()=>setShowManage(v=>!v),
+        style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)'}
+      }, showManage ? 'Close' : (customCats.length > 0 ? 'Manage ('+customCats.length+')' : '+ Add'))
+    ),
+    showManage && React.createElement('div', null,
+      customCats.length > 0 && React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.4rem',marginBottom:'.75rem'}},
+        ...customCats.map(c => React.createElement('div', {key:c.name,style:{display:'flex',alignItems:'center',gap:'.4rem',padding:'.25rem .6rem',borderRadius:'1rem',background:c.color+'22',border:'1px solid '+c.color+'55'}},
+          React.createElement('span', {style:{fontSize:'var(--t-sm)'}}, c.icon),
+          React.createElement('span', {style:{fontSize:'var(--t-xs)',fontWeight:600,color:c.color}}, c.name),
+          React.createElement('button', {onClick:()=>removeCategory(c.name),style:{background:'none',border:'none',cursor:'pointer',color:c.color,fontSize:'var(--t-xs)',padding:'0 .15rem',lineHeight:1,opacity:.7}}, '✕')
+        ))
+      ),
+      React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.5rem',alignItems:'flex-end'}},
+        React.createElement('input', {type:'text',className:'input-field',placeholder:'Category name',value:newName,onChange:e=>setNewName(e.target.value),onKeyDown:e=>e.key==='Enter'&&submitNew(),style:{flex:'1 1 130px',minWidth:'110px'}}),
+        React.createElement('input', {type:'text',className:'input-field',placeholder:'Icon',value:newIcon,onChange:e=>setNewIcon(e.target.value),style:{width:'60px',textAlign:'center'}}),
+        React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.25rem',maxWidth:'200px'}},
+          ...CAT_PALETTE.map(col => React.createElement('button', {key:col,onClick:()=>setNewColor(col),style:{width:'20px',height:'20px',borderRadius:'50%',background:col,border:newColor===col?'2px solid #fff':'2px solid transparent',cursor:'pointer',padding:0}}))
+        ),
+        React.createElement('button', {onClick:submitNew,style:{background:'var(--gold)',color:'#0b0e14',border:'none',padding:'.4rem .8rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',whiteSpace:'nowrap'}}, '+ Add')
+      )
+    )
+  );
+
   return React.createElement('div', null,
+    manageSection,
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'1.25rem'}}, 'Set monthly budget targets per category. Reconciled internal transfers excluded.'),
     React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(210px,100%),1fr))',gap:'.75rem'}},
-      ...EXPENSE_CATS.map(cat => {
-        const c=CATS[cat]||{color:'#94a3b8',icon:'•'}; const spent=catAmt[cat]||0; const budget=budgets[cat]||0;
+      ...allExpenseCats.map(cat => {
+        const c=allCats[cat]||{color:'#94a3b8',icon:'•'}; const spent=catAmt[cat]||0; const budget=budgets[cat]||0;
         const pct = budget>0 ? Math.min(100,spent/budget*100) : 0; const over = budget>0 && spent>budget;
         return React.createElement('div', {key:cat,style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'.8rem',borderLeft:'3px solid '+c.color}},
           React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.4rem'}},
