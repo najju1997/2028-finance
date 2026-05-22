@@ -51,6 +51,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 window._sb = sb;
 
 // ─── Login screen logic ──────────────────────────────────────────────────
+var ALLOWED_EMAILS = ['uzzan.blue@gmail.com','ujjanprajapati@gmail.com','salonimhzn@gmail.com'];
 var _pwVisible = false;
 var _mode = 'signin'; // 'signin' | 'signup'
 
@@ -76,10 +77,11 @@ function setMsg(text, cls){
 }
 
 async function doAuth(){
-  var email = document.getElementById('inp-email').value.trim();
+  var email = document.getElementById('inp-email').value.trim().toLowerCase();
   var pass = document.getElementById('inp-pass').value;
   var btn = document.getElementById('login-btn');
   if(!email || !pass){ setMsg('Email and password required','err'); return; }
+  if(!ALLOWED_EMAILS.includes(email)){ setMsg('Access restricted.','err'); return; }
   if(_mode === 'signup' && pass.length < 6){ setMsg('Password must be at least 6 characters','err'); return; }
   btn.disabled = true;
   setMsg(_mode === 'signin' ? 'Signing in…' : 'Creating account…','');
@@ -88,7 +90,7 @@ async function doAuth(){
     if(_mode === 'signin'){
       result = await sb.auth.signInWithPassword({ email, password: pass });
     } else {
-      result = await sb.auth.signUp({ email, password: pass });
+      result = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: 'https://uzzsalfinance.vercel.app' } });
     }
     if(result.error){ setMsg(result.error.message,'err'); btn.disabled = false; return; }
     if(_mode === 'signup' && !result.data.session){
@@ -117,7 +119,11 @@ document.addEventListener('DOMContentLoaded', async function(){
   document.getElementById('inp-email').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('inp-pass').focus(); });
   try {
     var { data } = await sb.auth.getSession();
-    if(data && data.session){ onAuthSuccess(); }
+    if(data && data.session){
+      var sessionEmail = (data.session.user.email || '').toLowerCase();
+      if(ALLOWED_EMAILS.includes(sessionEmail)){ onAuthSuccess(); }
+      else { await sb.auth.signOut(); }
+    }
   } catch(e){ console.warn('Session check failed:', e); }
 });
 </script>
