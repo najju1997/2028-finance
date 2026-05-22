@@ -4,6 +4,12 @@ function AppInner() {
   const [page,setPage] = useState(() => localStorage.getItem('FP_Main_Page') || 'projection');
   useEffect(() => localStorage.setItem('FP_Main_Page', page), [page]);
   const [menuOpen,setMenuOpen] = useState(false);
+  const [theme,setTheme] = useState(() => localStorage.getItem('FP_Theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('FP_Theme', theme);
+  }, [theme]);
+  function toggleTheme() { setTheme(t => t === 'dark' ? 'light' : 'dark'); }
 
   async function doLogout() {
     try { await window._sb.auth.signOut(); } catch(e){}
@@ -31,6 +37,9 @@ function AppInner() {
         ),
         React.createElement('div', {style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
           React.createElement(SyncBadge, null),
+          React.createElement('button', {className:'theme-toggle', onClick:toggleTheme, title:(theme==='dark'?'Switch to light mode':'Switch to dark mode')},
+            theme === 'dark' ? '☀️' : '🌙'
+          ),
           React.createElement('button', {className:'hamburger', onClick:()=>setMenuOpen(o=>!o)},
             React.createElement('span', {className:'ham-line', style:menuOpen?{transform:'translateY(7px) rotate(45deg)'}:{}}),
             React.createElement('span', {className:'ham-line', style:menuOpen?{opacity:0}:{}}),

@@ -35,8 +35,8 @@ function WaterfallChart({ txns, rec }) {
     React.createElement(ResponsiveContainer, {width:'100%',height:Math.max(280, data.length * 30)},
       React.createElement(BarChart, {data,margin:{top:8,right:16,bottom:60,left:8}},
         React.createElement(CartesianGrid, {strokeDasharray:'3 3',stroke:'var(--border)'}),
-        React.createElement(XAxis, {dataKey:'name',tick:{fill:'#fff',fontSize:10},angle:-45,textAnchor:'end',interval:0,height:60}),
-        React.createElement(YAxis, {tickFormatter:v=>'$'+(v/1000).toFixed(1)+'k',tick:{fill:'#fff',fontSize:11},axisLine:false,tickLine:false}),
+        React.createElement(XAxis, {dataKey:'name',tick:{fill:'var(--chart-text)',fontSize:10},angle:-45,textAnchor:'end',interval:0,height:60}),
+        React.createElement(YAxis, {tickFormatter:v=>'$'+(v/1000).toFixed(1)+'k',tick:{fill:'var(--chart-text)',fontSize:11},axisLine:false,tickLine:false}),
         React.createElement(Tooltip, {
           formatter:(v, n, p)=>{
             if(n==='base') return null;
@@ -323,10 +323,10 @@ function BNPLExposure({ allTxns, rec }) {
     React.createElement(ResponsiveContainer, {width:'100%',height:230},
       React.createElement(BarChart, {data,margin:{top:8,right:16,bottom:0,left:8}},
         React.createElement(CartesianGrid, {strokeDasharray:'3 3',stroke:'var(--border)'}),
-        React.createElement(XAxis, {dataKey:'month',tick:{fill:'#fff',fontSize:11}}),
-        React.createElement(YAxis, {tickFormatter:v=>'$'+v,tick:{fill:'#fff',fontSize:11},axisLine:false,tickLine:false}),
+        React.createElement(XAxis, {dataKey:'month',tick:{fill:'var(--chart-text)',fontSize:11}}),
+        React.createElement(YAxis, {tickFormatter:v=>'$'+v,tick:{fill:'var(--chart-text)',fontSize:11},axisLine:false,tickLine:false}),
         React.createElement(Tooltip, {contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)',color:'#fff'},itemStyle:{color:'#fff'},labelStyle:{color:'#fff'}}),
-        React.createElement(Legend, {wrapperStyle:{fontSize:'var(--t-xs)',color:'#fff'}}),
+        React.createElement(Legend, {wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--chart-text)'}}),
         React.createElement(Bar, {dataKey:'StepPay',stackId:'a',fill:'#f87171'}),
         React.createElement(Bar, {dataKey:'Afterpay',stackId:'a',fill:'#fb923c'}),
         React.createElement(Bar, {dataKey:'Other BNPL',stackId:'a',fill:'#facc15'})
@@ -459,10 +459,91 @@ function CashRunway({ allTxns, rec }) {
   );
 }
 
+// ── 6. Category Month Trend ────────────────────────────────────
+function CategoryMonthChart({ allTxns, rec }) {
+  const { allCats, allExpenseCats } = useTxn();
+  const [selected, setSelected] = useState(() => new Set(allExpenseCats));
+
+  useEffect(() => {
+    setSelected(prev => {
+      const next = new Set([...prev].filter(c => allExpenseCats.includes(c)));
+      allExpenseCats.forEach(c => { if (!prev.has(c) && !prev.size) next.add(c); });
+      return next.size ? next : new Set(allExpenseCats);
+    });
+  }, [allExpenseCats.join(',')]);
+
+  const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0,7)))].sort(), [allTxns]);
+
+  const data = useMemo(() => months.map(ym => {
+    const row = { month: new Date(ym+'-01').toLocaleDateString('en-AU',{month:'short',year:'2-digit'}) };
+    const txns = allTxns.filter(t => t.date.slice(0,7) === ym);
+    allExpenseCats.forEach(cat => {
+      row[cat] = parseFloat(txns.filter(t => isExpenseTxn(t,rec) && t.category===cat).reduce((s,t)=>s+Math.abs(t.amount),0).toFixed(2));
+    });
+    return row;
+  }), [months, allTxns, allExpenseCats, rec]);
+
+  const activeCats = allExpenseCats.filter(c => selected.has(c));
+
+  function toggle(cat) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  }
+
+  if (months.length < 2) return null;
+
+  return React.createElement('div', {className:'chart-card'},
+    React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'.5rem',marginBottom:'.75rem'}},
+      React.createElement('div', null,
+        React.createElement('div', {className:'chart-title',style:{margin:0}}, '📅 Spending by Category — Monthly'),
+        React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'Toggle categories to compare month-over-month trends')
+      ),
+      React.createElement('div', {style:{display:'flex',gap:'.4rem'}},
+        React.createElement('button', {onClick:()=>setSelected(new Set(allExpenseCats)),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.2rem .5rem',borderRadius:'var(--radius-sm)'}}, 'All'),
+        React.createElement('button', {onClick:()=>setSelected(new Set()),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.2rem .5rem',borderRadius:'var(--radius-sm)'}}, 'None'),
+      )
+    ),
+    React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.35rem',marginBottom:'1rem'}},
+      ...allExpenseCats.map(cat => {
+        const c = allCats[cat] || {color:'#94a3b8',icon:'•'};
+        const on = selected.has(cat);
+        return React.createElement('button', {
+          key:cat, onClick:()=>toggle(cat),
+          style:{padding:'.25rem .55rem',borderRadius:'1rem',border:'1px solid '+(on?c.color:'var(--border)'),
+            background:on?c.color+'22':'transparent',color:on?c.color:'var(--text3)',
+            cursor:'pointer',fontSize:'var(--t-xs)',fontWeight:on?600:400,transition:'all .15s'}
+        }, c.icon+' '+cat);
+      })
+    ),
+    activeCats.length === 0
+      ? React.createElement('div', {style:{textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)',padding:'2rem'}}, 'Select at least one category.')
+      : React.createElement(ResponsiveContainer, {width:'100%',height:280},
+          React.createElement(LineChart, {data, margin:{top:4,right:16,bottom:40,left:8}},
+            React.createElement(CartesianGrid, {strokeDasharray:'3 3',stroke:'var(--border)'}),
+            React.createElement(XAxis, {dataKey:'month',tick:{fill:'var(--chart-text)',fontSize:11},angle:-35,textAnchor:'end',interval:0,height:50}),
+            React.createElement(YAxis, {tickFormatter:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0)),tick:{fill:'var(--chart-text)',fontSize:11},axisLine:false,tickLine:false}),
+            React.createElement(Tooltip, {
+              formatter:(v,name)=>v>0?['$'+v.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}),name]:null,
+              contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)',color:'#fff'},
+              itemStyle:{color:'#fff'},labelStyle:{color:'#fff',fontWeight:700}
+            }),
+            ...activeCats.map(cat => {
+              const c = allCats[cat] || {color:'#94a3b8'};
+              return React.createElement(Line, {key:cat,type:'monotone',dataKey:cat,stroke:c.color,strokeWidth:2,dot:{r:3,fill:c.color},activeDot:{r:5}});
+            })
+          )
+        )
+  );
+}
+
 // ── Main Analysis Tab ──────────────────────────────────────────
 function AnalysisTab({ txns, rec, allTxns }) {
   return React.createElement('div', null,
     React.createElement(CashRunway, {allTxns, rec}),
+    React.createElement(CategoryMonthChart, {allTxns, rec}),
     React.createElement(WaterfallChart, {txns, rec}),
     React.createElement(FixedVsVariable, {txns, rec}),
 

@@ -8,11 +8,17 @@
 --border:#2a3448;--border2:#3a4560;--gold:#d4a843;--gold-dim:#a07c2a;--gold-glow:rgba(212,168,67,.15);
 --green:#3ec97a;--red:#e05555;--blue:#4a9eff;--text:#e8ecf4;--text2:#9ba8c0;--text3:#5a6480;
 --radius:.75rem;--radius-sm:.4rem;
---topbar-h:55px;
+--topbar-h:55px;--topbar-bg:rgba(11,14,20,.93);--chart-text:#ffffff;
+}
+[data-theme="light"]{
+--bg:#f3f6fd;--bg2:#eaeff8;--bg3:#dfe7f5;--surface:#ffffff;--surface2:#f0f4fb;
+--border:#d0d9ec;--border2:#b8c6de;--gold:#b8891a;--gold-dim:#9a7015;--gold-glow:rgba(184,137,26,.12);
+--green:#16a34a;--red:#dc2626;--blue:#2563eb;--text:#0f172a;--text2:#475569;--text3:#7c8fa8;
+--topbar-bg:rgba(243,246,253,.93);--chart-text:#1e293b;
 }
 body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
 .app{display:flex;flex-direction:column;min-height:100vh}
-.topbar{position:relative;z-index:100;background:rgba(11,14,20,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.topbar{position:relative;z-index:100;background:var(--topbar-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
 .topbar-inner{max-width:1400px;margin:0 auto;padding:.75rem clamp(1rem,4vw,2rem);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:nowrap}
 .brand{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
 .brand-icon{font-family:'Syne',sans-serif;font-size:var(--t-xl);color:var(--gold);line-height:1}
@@ -158,3 +164,8 @@ select.input-field{appearance:auto}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
 .sync-badge.saving .sync-dot{animation:pulse 1.2s infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+[data-theme="light"] .recharts-default-tooltip{background:#1c2333!important;border-color:#3a4560!important}
+[data-theme="light"] .recharts-tooltip-label{color:#e8ecf4!important}
+[data-theme="light"] .recharts-tooltip-item{color:#9ba8c0!important}
+.theme-toggle{background:none;border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:.85rem;padding:.3rem .55rem;border-radius:var(--radius-sm);transition:all .2s;line-height:1}
+.theme-toggle:hover{border-color:var(--border2);color:var(--text)}

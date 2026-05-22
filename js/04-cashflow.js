@@ -540,8 +540,8 @@ function SpendByCategory({ txns, rec, budgets, onDrillCategory }) {
     ),
     React.createElement(ResponsiveContainer, {width:'100%',height:Math.max(220, data.length*44)},
       React.createElement(BarChart, {data,layout:'vertical',margin:{top:0,right:70,left:8,bottom:0}},
-        React.createElement(XAxis, {type:'number',tickFormatter:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0)),tick:{fill:'#fff',fontSize:11},tickLine:false,axisLine:false}),
-        React.createElement(YAxis, {type:'category',dataKey:'cat',tick:{fill:'#fff',fontSize:12,fontWeight:600},tickLine:false,axisLine:false,width:115}),
+        React.createElement(XAxis, {type:'number',tickFormatter:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0)),tick:{fill:'var(--chart-text)',fontSize:11},tickLine:false,axisLine:false}),
+        React.createElement(YAxis, {type:'category',dataKey:'cat',tick:{fill:'var(--chart-text)',fontSize:12,fontWeight:600},tickLine:false,axisLine:false,width:115}),
         React.createElement(CartesianGrid, {strokeDasharray:'3 3',stroke:'var(--border)',horizontal:false}),
         React.createElement(Tooltip, {formatter:(v)=>['$'+v.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'  ('+(total>0?(v/total*100).toFixed(1):0)+'%)','Spent'],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)',color:'#fff'},itemStyle:{color:'#fff'},labelStyle:{color:'#fff',fontWeight:700}}),
         React.createElement(Bar, {dataKey:'amt',name:'Spent',radius:[0,4,4,0],onDoubleClick:(d)=>{if(onDrillCategory&&d&&d.cat) onDrillCategory(d.cat);},style:{cursor:'pointer'}},
@@ -550,7 +550,7 @@ function SpendByCategory({ txns, rec, budgets, onDrillCategory }) {
       )
     ),
     React.createElement('div', {style:{display:'flex',justifyContent:'flex-end',paddingTop:'.5rem',borderTop:'1px solid var(--border)',marginTop:'.5rem'}},
-      React.createElement('span', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-sm)',color:'#fff'}}, 'Total: '+fmt(total))
+      React.createElement('span', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-sm)',color:'var(--text)'}}, 'Total: '+fmt(total))
     )
   );
 }
@@ -572,14 +572,14 @@ function MonthTrend({ allTxns, rec }) {
     React.createElement(ResponsiveContainer, {width:'100%',height:230},
       React.createElement(LineChart, {data,margin:{top:8,right:16,bottom:0,left:8}},
         React.createElement(CartesianGrid, {strokeDasharray:'3 3',stroke:'var(--border)'}),
-        React.createElement(XAxis, {dataKey:'month',tick:{fill:'#fff',fontSize:11},tickLine:false}),
-        React.createElement(YAxis, {tickFormatter:v=>'$'+(Math.abs(v)/1000).toFixed(1)+'k',tick:{fill:'#fff',fontSize:11},tickLine:false,axisLine:false}),
+        React.createElement(XAxis, {dataKey:'month',tick:{fill:'var(--chart-text)',fontSize:11},tickLine:false}),
+        React.createElement(YAxis, {tickFormatter:v=>'$'+(Math.abs(v)/1000).toFixed(1)+'k',tick:{fill:'var(--chart-text)',fontSize:11},tickLine:false,axisLine:false}),
         React.createElement(Tooltip, {formatter:(v,n)=>[fmt(v),n],contentStyle:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',fontSize:'var(--t-xs)',color:'#fff'},itemStyle:{color:'#fff'},labelStyle:{color:'#fff'}}),
         React.createElement(ReferenceLine, {y:0,stroke:'#fff',strokeDasharray:'4 2'}),
         React.createElement(Line, {type:'monotone',dataKey:'income',name:'Income',stroke:'var(--green)',strokeWidth:2.5,dot:{r:4,fill:'var(--green)'}}),
         React.createElement(Line, {type:'monotone',dataKey:'expenses',name:'Expenses',stroke:'var(--red)',strokeWidth:2.5,dot:{r:4,fill:'var(--red)'}}),
         React.createElement(Line, {type:'monotone',dataKey:'net',name:'Net',stroke:'var(--gold)',strokeWidth:2,strokeDasharray:'5 3',dot:{r:3,fill:'var(--gold)'}}),
-        React.createElement(Legend, {wrapperStyle:{fontSize:'var(--t-xs)',color:'#fff'}})
+        React.createElement(Legend, {wrapperStyle:{fontSize:'var(--t-xs)',color:'var(--chart-text)'}})
       )
     )
   );
