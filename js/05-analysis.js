@@ -354,9 +354,10 @@ function CashRunway({ txns, rec }) {
 // ── Main Analysis Tab ──────────────────────────────────────────
 function AnalysisTab({ txns, rec, allTxns }) {
   return React.createElement('div', null,
+    React.createElement(CashRunway, {txns, rec}),
     React.createElement(WaterfallChart, {txns, rec}),
     React.createElement(FixedVsVariable, {txns, rec}),
-    React.createElement(CashRunway, {txns, rec}),
+
     React.createElement(BNPLExposure, {allTxns, rec}),
     React.createElement(RecurringDetector, {allTxns})
   );
