@@ -977,6 +977,93 @@ function BudgetTab({ txns, rec, budgets, onUpdate }) {
   );
 }
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function StatementTab({ allTxns, rec }) {
+  const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0,7)))].sort(), [allTxns]);
+  const years = useMemo(() => [...new Set(months.map(m => m.slice(0,4)))].sort().reverse(), [months]);
+  const [yearFilter, setYearFilter] = useState('All');
+  const [monthFilter, setMonthFilter] = useState('All');
+
+  const rows = useMemo(() => {
+    let running = 0;
+    return months.map(m => {
+      const mTxns = allTxns.filter(t => t.date.slice(0,7) === m);
+      const ujIncome = mTxns.filter(t => txnOwner(t)==='Ujjan' && isIncomeTxn(t,rec)).reduce((s,t)=>s+t.amount,0);
+      const ujExpense = mTxns.filter(t => txnOwner(t)==='Ujjan' && isExpenseTxn(t,rec)).reduce((s,t)=>s+Math.abs(t.amount),0);
+      const salIncome = mTxns.filter(t => txnOwner(t)==='Saloni' && isIncomeTxn(t,rec)).reduce((s,t)=>s+t.amount,0);
+      const salExpense = mTxns.filter(t => txnOwner(t)==='Saloni' && isExpenseTxn(t,rec)).reduce((s,t)=>s+Math.abs(t.amount),0);
+      const saving = (ujIncome+salIncome) - (ujExpense+salExpense);
+      running += saving;
+      return { month:m, ujIncome, ujExpense, salIncome, salExpense, saving, net:running };
+    });
+  }, [allTxns, rec, months.join(',')]);
+
+  const filteredRows = useMemo(() => rows.filter(r => {
+    const [y, mo] = r.month.split('-');
+    if (yearFilter !== 'All' && y !== yearFilter) return false;
+    if (monthFilter !== 'All' && MONTH_NAMES[parseInt(mo,10)-1] !== monthFilter) return false;
+    return true;
+  }).slice().reverse(), [rows, yearFilter, monthFilter]);
+
+  if (!months.length) return null;
+
+  const fmtMonth = ym => new Date(ym+'-01').toLocaleDateString('en-AU',{month:'short',year:'numeric'});
+  const totals = filteredRows.reduce((a,r) => ({
+    ujIncome:a.ujIncome+r.ujIncome, ujExpense:a.ujExpense+r.ujExpense,
+    salIncome:a.salIncome+r.salIncome, salExpense:a.salExpense+r.salExpense,
+    saving:a.saving+r.saving
+  }), {ujIncome:0,ujExpense:0,salIncome:0,salExpense:0,saving:0});
+
+  return React.createElement('div', null,
+    React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'1rem',alignItems:'center'}},
+      React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em',marginRight:'.25rem'}}, 'Filter:'),
+      React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'110px'},value:yearFilter,onChange:e=>setYearFilter(e.target.value)},
+        React.createElement('option', {value:'All'}, 'All Years'),
+        ...years.map(y => React.createElement('option',{key:y,value:y},y))
+      ),
+      React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'130px'},value:monthFilter,onChange:e=>setMonthFilter(e.target.value)},
+        React.createElement('option', {value:'All'}, 'All Months'),
+        ...MONTH_NAMES.map(mn => React.createElement('option',{key:mn,value:mn},mn))
+      ),
+      (yearFilter!=='All'||monthFilter!=='All') && React.createElement('button', {onClick:()=>{setYearFilter('All');setMonthFilter('All');},style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)'}}, '× Clear filters')
+    ),
+    React.createElement('div', {className:'table-wrap'},
+      React.createElement('table', {className:'data-table'},
+        React.createElement('thead', null, React.createElement('tr', null,
+          React.createElement('th', null, 'Month'),
+          React.createElement('th', null, 'Ujjan Income'),
+          React.createElement('th', null, 'Ujjan Expense'),
+          React.createElement('th', null, 'Saloni Income'),
+          React.createElement('th', null, 'Saloni Expense'),
+          React.createElement('th', null, 'Saving'),
+          React.createElement('th', null, 'Net')
+        )),
+        React.createElement('tbody', null,
+          ...filteredRows.map(r => React.createElement('tr', {key:r.month},
+            React.createElement('td', null, fmtMonth(r.month)),
+            React.createElement('td', {style:{color:'var(--green)'}}, fmt(r.ujIncome)),
+            React.createElement('td', {style:{color:'var(--red)'}}, fmt(r.ujExpense)),
+            React.createElement('td', {style:{color:'var(--green)'}}, fmt(r.salIncome)),
+            React.createElement('td', {style:{color:'var(--red)'}}, fmt(r.salExpense)),
+            React.createElement('td', {style:{fontWeight:700,color:r.saving>=0?'var(--green)':'var(--red)'}}, (r.saving>=0?'+':'')+fmt(r.saving)),
+            React.createElement('td', {style:{fontWeight:700,color:r.net>=0?'var(--gold)':'var(--red)'}}, (r.net>=0?'+':'')+fmt(r.net))
+          )),
+          filteredRows.length > 1 && React.createElement('tr', {style:{borderTop:'2px solid var(--border2)'}},
+            React.createElement('td', {style:{fontWeight:700}}, 'Total'),
+            React.createElement('td', {style:{color:'var(--green)',fontWeight:700}}, fmt(totals.ujIncome)),
+            React.createElement('td', {style:{color:'var(--red)',fontWeight:700}}, fmt(totals.ujExpense)),
+            React.createElement('td', {style:{color:'var(--green)',fontWeight:700}}, fmt(totals.salIncome)),
+            React.createElement('td', {style:{color:'var(--red)',fontWeight:700}}, fmt(totals.salExpense)),
+            React.createElement('td', {style:{fontWeight:700,color:totals.saving>=0?'var(--green)':'var(--red)'}}, (totals.saving>=0?'+':'')+fmt(totals.saving)),
+            React.createElement('td', null, '—')
+          )
+        )
+      )
+    )
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Dashboard
 // ═══════════════════════════════════════════════════════════════

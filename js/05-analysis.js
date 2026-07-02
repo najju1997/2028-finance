@@ -591,7 +591,7 @@ function CashflowDashboard() {
     if (next >= 0 && next < months.length) setSelMonth(months[next]);
   }
 
-  const CF_TABS = [{id:'overview',label:'📊 Overview'},{id:'analysis',label:'🔬 Analysis'},{id:'transactions',label:'🧾 Transactions'},{id:'audit',label:'🔍 Audit'},{id:'budget',label:'🎯 Budget'}];
+  const CF_TABS = [{id:'overview',label:'📊 Overview'},{id:'analysis',label:'🔬 Analysis'},{id:'transactions',label:'🧾 Transactions'},{id:'statement',label:'📄 Statement'},{id:'audit',label:'🔍 Audit'},{id:'budget',label:'🎯 Budget'}];
   const fmtMonth = ym => new Date(ym+'-01').toLocaleDateString('en-AU',{month:'short',year:'numeric'});
   const yearsOf = useMemo(() => [...new Set(months.map(m => m.slice(0,4)))].sort().reverse(), [months]);
   const OWNERS = [{id:'both',label:'Both'},{id:'ujjan',label:'Ujjan'},{id:'saloni',label:'Saloni'}];
@@ -634,6 +634,7 @@ function CashflowDashboard() {
     ),
     tab==='analysis' && React.createElement(AnalysisTab, {txns:monthTxns, rec, allTxns:scopedAllTxns}),
     tab==='transactions' && React.createElement(TransactionTable, {txns:monthTxns, rec, filterCat, setFilterCat, allTxnsForAcct:scopedAllTxns}),
+    tab==='statement' && React.createElement(StatementTab, {allTxns, rec}),
     tab==='audit' && React.createElement(ReconciliationAudit, {txns:monthTxns, rec}),
     tab==='budget' && React.createElement(BudgetTab, {txns:monthTxns, rec, budgets:T.budgets||{}, onUpdate:updateBudget})
   );
