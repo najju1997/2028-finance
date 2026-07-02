@@ -200,6 +200,8 @@ function detectAccount(rows, bank) {
 
 function isAutoHide(desc) { return (desc || '').toUpperCase().includes('STEPPAY PYMT'); }
 
+function txnOwner(t) { return (t.account || '').startsWith('Saloni') ? 'Saloni' : 'Ujjan'; }
+
 function catKind(cat) { return (CATS[cat] || {}).kind || 'expense'; }
 function isReconciled(t, rec) { return rec && rec.has(t.id); }
 

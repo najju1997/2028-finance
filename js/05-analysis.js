@@ -557,13 +557,16 @@ function CashflowDashboard() {
   const allTxns = T.transactions || [];
   const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0,7)))].sort().reverse(), [allTxns]);
   const [selMonth, setSelMonth] = useState(() => months[0]||'');
+  const [owner, setOwner] = useState(() => { try { return localStorage.getItem('FP_CF_Owner') || 'both'; } catch (e) { return 'both'; }});
   const [tab, setTab] = useState(() => { try { return localStorage.getItem('FP_CF_Tab') || 'overview'; } catch (e) { return 'overview'; }});
   const [filterCat, setFilterCat] = useState('All');
   useEffect(() => { try { localStorage.setItem('FP_CF_Tab', tab); } catch (e) {}}, [tab]);
-  useEffect(() => { if (months.length > 0 && !months.includes(selMonth)) setSelMonth(months[0]); }, [months.join(',')]);
+  useEffect(() => { try { localStorage.setItem('FP_CF_Owner', owner); } catch (e) {}}, [owner]);
+  useEffect(() => { if (selMonth !== 'ALL' && months.length > 0 && !months.includes(selMonth)) setSelMonth(months[0]); }, [months.join(',')]);
 
-  const monthTxns = useMemo(() => allTxns.filter(t => t.date.slice(0,7) === selMonth), [allTxns, selMonth]);
-  const monthLabel = selMonth ? new Date(selMonth+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'}) : '';
+  const scopedAllTxns = useMemo(() => owner==='both' ? allTxns : allTxns.filter(t => txnOwner(t)===(owner==='ujjan'?'Ujjan':'Saloni')), [allTxns, owner]);
+  const monthTxns = useMemo(() => selMonth==='ALL' ? scopedAllTxns : scopedAllTxns.filter(t => t.date.slice(0,7) === selMonth), [scopedAllTxns, selMonth]);
+  const monthLabel = selMonth==='ALL' ? 'All Time' : selMonth ? new Date(selMonth+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'}) : '';
   const [showDelMenu, setShowDelMenu] = useState(false);
   const monthAccounts = useMemo(() => [...new Set(monthTxns.map(t => t.account))].sort(), [monthTxns]);
   if (!months.length) return null;
@@ -581,18 +584,34 @@ function CashflowDashboard() {
     setTimeout(() => window.scrollTo({top:0,behavior:'smooth'}), 50);
   }
 
+  function stepMonth(delta) {
+    if (selMonth === 'ALL') { setSelMonth(months[0]); return; }
+    const i = months.indexOf(selMonth);
+    const next = i + delta;
+    if (next >= 0 && next < months.length) setSelMonth(months[next]);
+  }
+
   const CF_TABS = [{id:'overview',label:'📊 Overview'},{id:'analysis',label:'🔬 Analysis'},{id:'transactions',label:'🧾 Transactions'},{id:'audit',label:'🔍 Audit'},{id:'budget',label:'🎯 Budget'}];
   const fmtMonth = ym => new Date(ym+'-01').toLocaleDateString('en-AU',{month:'short',year:'numeric'});
+  const yearsOf = useMemo(() => [...new Set(months.map(m => m.slice(0,4)))].sort().reverse(), [months]);
+  const OWNERS = [{id:'both',label:'Both'},{id:'ujjan',label:'Ujjan'},{id:'saloni',label:'Saloni'}];
+  const canStepBack = selMonth !== 'ALL' && months.indexOf(selMonth) < months.length - 1;
+  const canStepFwd = selMonth !== 'ALL' && months.indexOf(selMonth) > 0;
 
   return React.createElement('div', null,
-    React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'1.25rem',alignItems:'center'}},
-      React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em',marginRight:'.25rem'}}, 'Month:'),
-      months.length <= 8
-        ? React.createElement(React.Fragment, null, ...months.map(m => React.createElement('button', {key:m,className:'subnav-btn'+(m===selMonth?' active':''),onClick:()=>setSelMonth(m)}, fmtMonth(m))))
-        : React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'180px',padding:'.35rem .55rem'},value:selMonth,onChange:e=>setSelMonth(e.target.value)},
-            ...months.map(m => React.createElement('option', {key:m,value:m}, fmtMonth(m)+' ('+allTxns.filter(t=>t.date.slice(0,7)===m).length+' txns)'))
-          ),
-      React.createElement('div', {style:{marginLeft:'auto',position:'relative'}},
+    React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'.6rem',alignItems:'center'}},
+      React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em',marginRight:'.25rem'}}, 'Period:'),
+      React.createElement('button', {className:'subnav-btn'+(selMonth==='ALL'?' active':''),onClick:()=>setSelMonth('ALL')}, '📅 All Time'),
+      React.createElement('div', {style:{display:'flex',alignItems:'center',gap:'.3rem',background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.15rem .3rem'}},
+        React.createElement('button', {onClick:()=>stepMonth(1),disabled:!canStepBack,title:'Previous month',style:{background:'none',border:'none',color:canStepBack?'var(--text2)':'var(--text3)',cursor:canStepBack?'pointer':'default',fontSize:'var(--t-sm)',padding:'.2rem .4rem',opacity:canStepBack?1:.4}}, '◀'),
+        React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'160px',padding:'.3rem .5rem',border:'none',background:'transparent'},value:selMonth==='ALL'?'':selMonth,onChange:e=>setSelMonth(e.target.value)},
+          ...yearsOf.map(y => React.createElement('optgroup', {key:y,label:y},
+            ...months.filter(m => m.slice(0,4)===y).map(m => React.createElement('option', {key:m,value:m}, fmtMonth(m)+' ('+allTxns.filter(t=>t.date.slice(0,7)===m).length+')'))
+          ))
+        ),
+        React.createElement('button', {onClick:()=>stepMonth(-1),disabled:!canStepFwd,title:'Next month',style:{background:'none',border:'none',color:canStepFwd?'var(--text2)':'var(--text3)',cursor:canStepFwd?'pointer':'default',fontSize:'var(--t-sm)',padding:'.2rem .4rem',opacity:canStepFwd?1:.4}}, '▶')
+      ),
+      selMonth!=='ALL' && React.createElement('div', {style:{marginLeft:'auto',position:'relative'}},
         React.createElement('button', {onClick:()=>setShowDelMenu(v=>!v),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)',whiteSpace:'nowrap'}}, '🗑️ Delete month'),
         showDelMenu && React.createElement('div', {style:{position:'absolute',top:'100%',right:0,marginTop:'.25rem',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 6px 16px rgba(0,0,0,.2)',zIndex:20,minWidth:'200px',overflow:'hidden'}},
           React.createElement('button', {onClick:()=>doDeleteMonth(null),style:{display:'block',width:'100%',textAlign:'left',background:'none',border:'none',borderBottom:'1px solid var(--border)',color:'var(--text)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.5rem .75rem',fontWeight:600}}, 'All accounts ('+monthTxns.length+')'),
@@ -600,17 +619,21 @@ function CashflowDashboard() {
         )
       )
     ),
+    React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'1.25rem',alignItems:'center'}},
+      React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em',marginRight:'.25rem'}}, 'Person:'),
+      ...OWNERS.map(o => React.createElement('button', {key:o.id,className:'subnav-btn'+(owner===o.id?' active':''),onClick:()=>setOwner(o.id)}, o.label))
+    ),
     React.createElement(CfSummaryCards, {txns:monthTxns, rec}),
     React.createElement('nav', {className:'subnav'},
       ...CF_TABS.map(t => React.createElement('button', {key:t.id,className:'subnav-btn'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)}, t.label))
     ),
     tab==='overview' && React.createElement('div', null,
       React.createElement(SpendByCategory, {txns:monthTxns, rec, budgets:T.budgets||{}, onDrillCategory:drillCategory}),
-      React.createElement(MonthTrend, {allTxns, rec}),
+      React.createElement(MonthTrend, {allTxns:scopedAllTxns, rec}),
       React.createElement(InsightsPanel, {txns:monthTxns, rec, selectedMonth:monthLabel})
     ),
-    tab==='analysis' && React.createElement(AnalysisTab, {txns:monthTxns, rec, allTxns}),
-    tab==='transactions' && React.createElement(TransactionTable, {txns:monthTxns, rec, filterCat, setFilterCat, allTxnsForAcct:allTxns}),
+    tab==='analysis' && React.createElement(AnalysisTab, {txns:monthTxns, rec, allTxns:scopedAllTxns}),
+    tab==='transactions' && React.createElement(TransactionTable, {txns:monthTxns, rec, filterCat, setFilterCat, allTxnsForAcct:scopedAllTxns}),
     tab==='audit' && React.createElement(ReconciliationAudit, {txns:monthTxns, rec}),
     tab==='budget' && React.createElement(BudgetTab, {txns:monthTxns, rec, budgets:T.budgets||{}, onUpdate:updateBudget})
   );
