@@ -87,6 +87,7 @@ function splitCsvLine(line) {
 function detectBank(text) {
   const first = (text.split(/\r?\n/)[0] || '').toLowerCase();
   if (first.includes('transaction date') && first.includes('debit') && first.includes('credit')) return 'macquarie';
+  if (first.includes('narrative') && (first.includes('debit amount') || first.includes('credit amount'))) return 'westpac';
   if (first.includes('date') && first.includes('description') && (first.includes('debit') || first.includes('credit'))) return 'westpac';
   if (/^\d{2}\/\d{2}\/\d{4}/.test(text.trim())) return 'commbank';
   return 'unknown';
@@ -142,6 +143,31 @@ function parseMacquarieCSV(text) {
     if (mqSub === 'transfers' || mqCat === 'financial') preCat = 'Transfers';
     else if (mqCat === 'income') preCat = 'Income';
     rows.push({ date, amount, description, balance:(parts[iBal]||'').trim(), account:acct, preCat });
+  }
+  return rows;
+}
+
+function parseWestpacCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const header = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const col = name => header.indexOf(name);
+  const iDate = col('date');
+  const iNarr = col('narrative') >= 0 ? col('narrative') : col('description');
+  const iDebit = col('debit amount') >= 0 ? col('debit amount') : col('debit');
+  const iCredit = col('credit amount') >= 0 ? col('credit amount') : col('credit');
+  const iBal = col('balance');
+  const rows = [];
+  for (let li = 1; li < lines.length; li++) {
+    const parts = splitCsvLine(lines[li]);
+    if (parts.length < 2) continue;
+    const date = parseDate(parts[iDate]);
+    if (!date) continue;
+    const debit = parseFloat(String(parts[iDebit]||'').replace(/[^0-9.]/g,''))||0;
+    const credit = parseFloat(String(parts[iCredit]||'').replace(/[^0-9.]/g,''))||0;
+    if (!debit && !credit) continue;
+    const amount = credit - debit;
+    rows.push({ date, amount, description:(parts[iNarr]||'').trim(), balance:(parts[iBal]||'').trim() });
   }
   return rows;
 }
@@ -334,6 +360,7 @@ function UploadZone({ onDone }) {
       const bank = detectBank(text);
       let raw, acctFromFile=null;
       if (bank === 'macquarie') { raw = parseMacquarieCSV(text); acctFromFile = detectAccount(raw,'macquarie'); }
+      else if (bank === 'westpac') { raw = parseWestpacCSV(text); acctFromFile = detectAccount(raw,'westpac'); }
       else { raw = parseCommBankCSV(text); acctFromFile = detectAccount(raw, bank==='commbank'?'commbank':'unknown'); }
       if (!raw.length) { results.push({fname:file.name,bank,error:'No valid rows found',txns:[],total:0,dupes:0,fresh:0,account:'-'}); continue; }
       const txns = raw.map(r => ({
@@ -379,7 +406,7 @@ function UploadZone({ onDone }) {
       React.createElement('div', {style:{fontSize:'2rem',marginBottom:'.4rem'}}, drag?'📥':'📂'),
       React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-md)',color:drag?'var(--gold)':'var(--text)',marginBottom:'.25rem'}},
         drag?'Release to upload':'Drag & drop CSVs here'),
-      React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, 'CommBank · Macquarie · multi-file supported  ·  Click to browse')
+      React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, 'CommBank · Macquarie · Westpac · multi-file supported  ·  Click to browse')
     ),
     previews.length > 0 && React.createElement('div', null,
       React.createElement('div', {style:{display:'flex',flexDirection:'column',gap:'.5rem',marginBottom:'1rem'}},

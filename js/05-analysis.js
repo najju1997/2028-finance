@@ -609,7 +609,7 @@ function CashflowTracker() {
     React.createElement('div', {style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
       React.createElement('div', null,
         React.createElement('h1', {className:'page-title'}, 'Monthly Cash Flow'),
-        React.createElement('p', {className:'page-subtitle'}, 'CommBank · Macquarie · Auto-reconciled · No double-counting')
+        React.createElement('p', {className:'page-subtitle'}, 'CommBank · Macquarie · Westpac · Auto-reconciled · No double-counting')
       ),
       hasTxns && React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap'}},
         React.createElement('button', {className:'subnav-btn'+(showUpload?' active':''),onClick:()=>setShowUpload(o=>!o)}, showUpload?'✕ Close':'📂 Upload More Files'),
@@ -620,7 +620,7 @@ function CashflowTracker() {
     !hasTxns && React.createElement('div', {style:{textAlign:'center',padding:'3rem 2rem',color:'var(--text3)'}},
       React.createElement('div', {style:{fontSize:'3rem',marginBottom:'1rem'}}, '📊'),
       React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontSize:'var(--t-xl)',fontWeight:700,marginBottom:'.5rem',color:'var(--text)'}}, 'No transactions yet'),
-      React.createElement('div', {style:{fontSize:'var(--t-sm)'}}, 'Upload your CommBank or Macquarie CSV exports to get started')
+      React.createElement('div', {style:{fontSize:'var(--t-sm)'}}, 'Upload your CommBank, Macquarie or Westpac CSV exports to get started')
     ),
     hasTxns && React.createElement(CashflowDashboard, null)
   );
