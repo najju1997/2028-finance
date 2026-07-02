@@ -666,6 +666,6 @@ function CashflowTracker() {
 }
 
 function CashflowTrackerConnected() {
-  return React.createElement(TxnProvider, null, React.createElement(CashflowTracker, null));
+  return React.createElement(CashflowTracker, null);
 }
 

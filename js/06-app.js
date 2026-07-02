@@ -68,7 +68,9 @@ function AppInner() {
 function App() {
   return React.createElement(SyncProvider, null,
     React.createElement(FinanceProvider, null,
-      React.createElement(AppInner, null)
+      React.createElement(TxnProvider, null,
+        React.createElement(AppInner, null)
+      )
     )
   );
 }

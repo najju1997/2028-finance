@@ -631,7 +631,91 @@ function NepalPage({nepal}) {
   );
 }
 
-const SUBNAV = [{id:'summary',label:'📊 Summary'},{id:'cashflow',label:'💵 Cashflow'},{id:'income',label:'📈 Income & Expenses'},{id:'nepal',label:'🏔️ Nepal'}];
+function ProjectionVsActual({rows}) {
+  const { T } = useTxn();
+  const allTxns = (T && T.transactions) || [];
+  const rec = useMemo(() => reconcileAll(allTxns), [allTxns]);
+
+  const actualByMonth = useMemo(() => {
+    const map = {};
+    allTxns.forEach(t => {
+      const ym = t.date.slice(0,7);
+      if (!map[ym]) map[ym] = {income:0, expense:0};
+      if (isIncomeTxn(t, rec)) map[ym].income += t.amount;
+      if (isExpenseTxn(t, rec)) map[ym].expense += Math.abs(t.amount);
+    });
+    return map;
+  }, [allTxns, rec]);
+
+  const merged = useMemo(() => rows.map(r => {
+    const ymStr = String(Math.floor(r.ym/100)) + '-' + String(r.ym%100).padStart(2,'0');
+    const projSaving = r.totalInc - r.totalExp;
+    const actual = actualByMonth[ymStr];
+    if (!actual) return { ...r, ymStr, hasActual:false, projSaving };
+    const actualSaving = actual.income - actual.expense;
+    // >100% = beat plan, 100% = exactly met, <100% = fell short. When the
+    // plan itself projects a loss, "meeting" it means losing no more than
+    // planned, so the ratio is measured off the planned shortfall instead.
+    let pct;
+    if (projSaving > 0) pct = (actualSaving/projSaving)*100;
+    else if (projSaving === 0) pct = actualSaving >= 0 ? 100 : 0;
+    else pct = 100 + ((actualSaving-projSaving)/Math.abs(projSaving))*100;
+    return { ...r, ymStr, hasActual:true, actualIncome:actual.income, actualExpense:actual.expense, actualSaving, projSaving, pct };
+  }), [rows, actualByMonth]);
+
+  const withActual = merged.filter(r => r.hasActual);
+
+  if (!withActual.length) {
+    return React.createElement('div', {className:'chart-card'},
+      React.createElement('div', {style:{textAlign:'center',padding:'2rem',color:'var(--text3)'}},
+        'No Monthly Cash data yet for the projected months. Upload bank CSVs in Monthly Cash to compare projection vs reality.')
+    );
+  }
+
+  return React.createElement('div', null,
+    React.createElement('div', {className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Projection vs Actual — Savings'),
+      React.createElement(ResponsiveContainer, {width:'100%',height:260},
+        React.createElement(BarChart, {data:withActual,margin:{top:8,right:16,bottom:0,left:8}},
+          React.createElement(CartesianGrid,{strokeDasharray:'3 3',stroke:'var(--border)'}),
+          React.createElement(XAxis,{dataKey:'label',tick:{fill:'var(--text3)',fontSize:10},tickLine:false}),
+          React.createElement(YAxis,{tickFormatter:v=>'$'+(v/1000).toFixed(0)+'k',tick:{fill:'var(--text3)',fontSize:11},tickLine:false,axisLine:false}),
+          React.createElement(Tooltip,{content:React.createElement(TT)}),
+          React.createElement(ReferenceLine,{y:0,stroke:'var(--text3)'}),
+          React.createElement(Bar, {dataKey:'projSaving',name:'Projected Saving',fill:'var(--text3)',radius:[3,3,0,0]}),
+          React.createElement(Bar, {dataKey:'actualSaving',name:'Actual Saving',radius:[3,3,0,0]},
+            ...withActual.map((r,i)=>React.createElement(Cell,{key:i,fill:r.actualSaving>=0?'var(--green)':'var(--red)'}))
+          )
+        )
+      )
+    ),
+    React.createElement('div', {className:'chart-card'},
+      React.createElement('div',{className:'chart-title'},'Monthly Reality Check'),
+      React.createElement('div', {className:'table-wrap'},
+        React.createElement('table', {className:'data-table'},
+          React.createElement('thead', null, React.createElement('tr', null,
+            ...['Month','Proj. Income','Proj. Expense','Proj. Saving','Actual Income','Actual Expense','Actual Saving','% of Plan Met']
+              .map(h=>React.createElement('th',{key:h},h))
+          )),
+          React.createElement('tbody', null,
+            ...withActual.map(r => React.createElement('tr', {key:r.ym},
+              React.createElement('td',null,r.label),
+              React.createElement('td',null,fmt(r.totalInc)),
+              React.createElement('td',null,fmt(r.totalExp)),
+              React.createElement('td',{className:r.projSaving>=0?'pos':'neg'},fmt(r.projSaving)),
+              React.createElement('td',null,fmt(r.actualIncome)),
+              React.createElement('td',null,fmt(r.actualExpense)),
+              React.createElement('td',{className:r.actualSaving>=0?'pos':'neg'},fmt(r.actualSaving)),
+              React.createElement('td',{className:r.pct>=100?'pos':(r.pct<70?'neg':''),style:{fontWeight:700}}, Math.round(r.pct)+'%')
+            ))
+          )
+        )
+      )
+    )
+  );
+}
+
+const SUBNAV = [{id:'summary',label:'📊 Summary'},{id:'cashflow',label:'💵 Cashflow'},{id:'income',label:'📈 Income & Expenses'},{id:'reality',label:'✅ Projection vs Actual'},{id:'nepal',label:'🏔️ Nepal'}];
 
 function Results() {
   const {compute,nepalCalc} = useFinance();
@@ -648,6 +732,7 @@ function Results() {
     sub==='summary' && React.createElement(Summary, {rows,nepal}),
     sub==='cashflow' && React.createElement(Cashflow, {rows}),
     sub==='income' && React.createElement(IncomePage, {rows}),
+    sub==='reality' && React.createElement(ProjectionVsActual, {rows}),
     sub==='nepal' && React.createElement(NepalPage, {nepal}),
   );
 }
