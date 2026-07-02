@@ -330,7 +330,7 @@ function LifeEventRow({ev,onUpdate,onRemove}) {
     ),
     React.createElement('div', {className:'input-group', style:{justifyContent:'flex-end'}},
       React.createElement('label', {className:'input-label'}, '\u00a0'),
-      React.createElement('button', {className:'btn-remove', onClick:onRemove}, '✕')
+      React.createElement('button', {className:'btn-remove', onClick:onRemove}, React.createElement(Icon,{name:'x',size:14}))
     )
   );
 }
@@ -354,7 +354,7 @@ function ExtraRecRow({row,onUpdate,onRemove,cpiOption}) {
     ),
     React.createElement('div', {className:'input-group', style:{justifyContent:'flex-end'}},
       React.createElement('label', {className:'input-label'}, '\u00a0'),
-      React.createElement('button', {className:'btn-remove', onClick:onRemove}, '✕')
+      React.createElement('button', {className:'btn-remove', onClick:onRemove}, React.createElement(Icon,{name:'x',size:14}))
     )
   );
 }
@@ -364,13 +364,13 @@ function LifeAssumptions() {
   const [sub,setSub] = useState(() => localStorage.getItem('FP_Life_Assump_Tab') || 'position');
   useEffect(() => localStorage.setItem('FP_Life_Assump_Tab', sub), [sub]);
   const SUBS = [
-    {id:'position',label:'🏠 Position'},
-    {id:'income',label:'💰 Income & Tax'},
-    {id:'expenses',label:'🛒 Expenses'},
-    {id:'super',label:'🏦 Super & ETF'},
-    {id:'ip',label:'🏗️ Inv. Property'},
-    {id:'events',label:'📅 Life Events'},
-    {id:'extras',label:'➕ Custom Fields'},
+    {id:'position',icon:'home',label:'Position'},
+    {id:'income',icon:'dollar-sign',label:'Income & Tax'},
+    {id:'expenses',icon:'shopping-cart',label:'Expenses'},
+    {id:'super',icon:'bank',label:'Super & ETF'},
+    {id:'ip',icon:'building',label:'Inv. Property'},
+    {id:'events',icon:'calendar',label:'Life Events'},
+    {id:'extras',icon:'plus',label:'Custom Fields'},
   ];
   return React.createElement('div', null,
     React.createElement('div', {style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}},
@@ -381,10 +381,10 @@ function LifeAssumptions() {
     ),
     React.createElement('nav', {className:'subnav', style:{marginBottom:'1.5rem'}},
       ...SUBS.map(s => React.createElement('button', {key:s.id,
-        className:'subnav-btn'+(sub===s.id?' active':''), onClick:()=>setSub(s.id)}, s.label))
+        className:'subnav-btn'+(sub===s.id?' active':''), onClick:()=>setSub(s.id)}, React.createElement(IconLabel,{icon:s.icon},s.label)))
     ),
 
-    sub==='position' && React.createElement(Section, {icon:'📊',title:'Starting Position (July 2028)'},
+    sub==='position' && React.createElement(Section, {icon:'bar-chart',title:'Starting Position (July 2028)'},
       React.createElement('div', {className:'input-grid'},
         React.createElement(LDate, {label:'Start Date',k:'startDate'}),
         React.createElement(LField, {label:'Start Age',k:'startAge'}),
@@ -406,7 +406,7 @@ function LifeAssumptions() {
     ),
 
     sub==='income' && React.createElement('div', null,
-      React.createElement(Section, {icon:'💰',title:'Your Salary'},
+      React.createElement(Section, {icon:'dollar-sign',title:'Your Salary'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Salary at Age 31',k:'sal31',prefix:true}),
           React.createElement(LField,{label:'Salary at Age 32',k:'sal32',prefix:true}),
@@ -415,7 +415,7 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Growth Rate from Age 34',k:'salGrowth',pct:true,hint:'compounding'}),
         )
       ),
-      React.createElement(Section, {icon:'👩‍💼',title:'Wife Salary'},
+      React.createElement(Section, {icon:'user',title:'Wife Salary'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Salary at Age 31',k:'wifeSal31',prefix:true}),
           React.createElement(LField,{label:'Salary at Age 32',k:'wifeSal32',prefix:true}),
@@ -424,13 +424,13 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Growth Rate from Age 34',k:'wifeSalGrowth',pct:true}),
         )
       ),
-      React.createElement(Section, {icon:'💵',title:'Other Income'},
+      React.createElement(Section, {icon:'dollar-sign',title:'Other Income'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Side Income ($/month, gross)',k:'sideIncome',prefix:true,hint:'Taxed at marginal rate'}),
           React.createElement(LField,{label:'SGC Rate',k:'sgcRate',pct:true,hint:'12% employer super'}),
         )
       ),
-      React.createElement(Section, {icon:'📊',title:'Tax Engine (Stage 3 ATO)'},
+      React.createElement(Section, {icon:'bar-chart',title:'Tax Engine (Stage 3 ATO)'},
         React.createElement('div',{className:'info-box',style:{marginBottom:'.75rem'}},
           React.createElement('p',null,'Brackets: 0% / 16% / 30% / 37% / 45%. LITO + Medicare automatic. Deductions reduce taxable income. IP losses (neg gearing) and ETF dividends/franking handled automatically.')
         ),
@@ -445,7 +445,7 @@ function LifeAssumptions() {
     ),
 
     sub==='expenses' && React.createElement('div', null,
-      React.createElement(Section, {icon:'🛒',title:'Core Living (monthly, +CPI/yr)'},
+      React.createElement(Section, {icon:'shopping-cart',title:'Core Living (monthly, +CPI/yr)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Groceries & Household',k:'groceries',prefix:true}),
           React.createElement(LField,{label:'Utilities',k:'utilities',prefix:true}),
@@ -457,7 +457,7 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'CPI Rate',k:'cpiRate',pct:true}),
         )
       ),
-      React.createElement(Section, {icon:'🏡',title:'Property Running (monthly, +CPI)'},
+      React.createElement(Section, {icon:'home',title:'Property Running (monthly, +CPI)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Council Rates',k:'council',prefix:true}),
           React.createElement(LField,{label:'Water',k:'water',prefix:true}),
@@ -468,7 +468,7 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Other Household',k:'otherHouse',prefix:true}),
         )
       ),
-      React.createElement(Section, {icon:'🚗',title:'Vehicles (monthly, +CPI)'},
+      React.createElement(Section, {icon:'car',title:'Vehicles (monthly, +CPI)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Car 1 Fuel',k:'carFuel',prefix:true}),
           React.createElement(LField,{label:'Car 1 Insurance',k:'carIns',prefix:true}),
@@ -478,7 +478,7 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Car 2 All-in (age 33+)',k:'car2',prefix:true}),
         )
       ),
-      React.createElement(Section, {icon:'🛡️',title:'Insurance (monthly, +CPI)'},
+      React.createElement(Section, {icon:'shield',title:'Insurance (monthly, +CPI)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Private Health (family)',k:'healthIns',prefix:true}),
           React.createElement(LField,{label:'Life Insurance',k:'lifeIns',prefix:true}),
@@ -486,14 +486,14 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Trauma / Critical Illness',k:'trauma',prefix:true}),
         )
       ),
-      React.createElement(Section, {icon:'🎯',title:'Savings Goals (monthly, +CPI)'},
+      React.createElement(Section, {icon:'target',title:'Savings Goals (monthly, +CPI)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'International Travel Fund',k:'travel',prefix:true}),
           React.createElement(LField,{label:'Healthcare Gap / Dental',k:'healthcare',prefix:true}),
           React.createElement(LField,{label:'Christmas / Domestic',k:'christmas',prefix:true}),
         )
       ),
-      React.createElement(Section, {icon:'👶',title:'Children & Education (monthly)'},
+      React.createElement(Section, {icon:'baby',title:'Children & Education (monthly)'},
         React.createElement('div',{className:'input-grid'},
           React.createElement(LField,{label:'Childcare (age 4-5)',k:'childcare',prefix:true}),
           React.createElement(LField,{label:'Primary School era (age 6-12)',k:'primary',prefix:true}),
@@ -506,7 +506,7 @@ function LifeAssumptions() {
     ),
 
     sub==='super' && React.createElement('div', null,
-      React.createElement(Section, {icon:'🏦',title:'Superannuation'},
+      React.createElement(Section, {icon:'bank',title:'Superannuation'},
         React.createElement('div',{className:'info-box',style:{marginBottom:'.75rem'}},
           React.createElement('p',null,'Contributions taxed at 15% on entry (auto). Accumulation return is net of 15% earnings tax (~6%). Pension phase post-60 is tax-free (~7%).')
         ),
@@ -519,7 +519,7 @@ function LifeAssumptions() {
           React.createElement(LField,{label:'Super SWR',k:'superSWR',pct:true,hint:'Safe withdrawal rate'}),
         )
       ),
-      React.createElement(Section, {icon:'📈',title:'ETF Portfolio'},
+      React.createElement(Section, {icon:'trending-up',title:'ETF Portfolio'},
         React.createElement('div',{className:'info-box',style:{marginBottom:'.75rem'}},
           React.createElement('p',null,'Dividend yield is taxed each year at marginal rate (with franking credit refund). Capital growth grows tax-deferred.')
         ),
@@ -533,7 +533,7 @@ function LifeAssumptions() {
       )
     ),
 
-    sub==='ip' && React.createElement(Section, {icon:'🏗️',title:'Investment Property (Strategy 3 only)'},
+    sub==='ip' && React.createElement(Section, {icon:'building',title:'Investment Property (Strategy 3 only)'},
       React.createElement('div',{className:'info-box',style:{marginBottom:'.75rem'}},
         React.createElement('p',null,'Negative gearing loss is deducted from owner\'s taxable income (refund flows back). Positive cashflow is added to taxable income. Set the IP owner in the Income & Tax tab.')
       ),
@@ -555,7 +555,7 @@ function LifeAssumptions() {
       )
     ),
 
-    sub==='events' && React.createElement(Section, {icon:'📅',title:'Life Events (one-off costs)'},
+    sub==='events' && React.createElement(Section, {icon:'calendar',title:'Life Events (one-off costs)'},
       React.createElement('div',{className:'info-box',style:{marginBottom:'1rem'}},
         React.createElement('p',null,"Amount is in today's dollars. Toggle CPI to inflate to year-of-spend dollars.")
       ),
@@ -569,7 +569,7 @@ function LifeAssumptions() {
     ),
 
     sub==='extras' && React.createElement('div', null,
-      React.createElement(Section, {icon:'💵',title:'Extra Income Streams (gross, taxed)'},
+      React.createElement(Section, {icon:'dollar-sign',title:'Extra Income Streams (gross, taxed)'},
         ...(D.extraIncome||[]).map(row => React.createElement(ExtraRecRow, {key:row.id, row, cpiOption:false,
           onUpdate:(k,v) => setD(p=>({...p, extraIncome:p.extraIncome.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
           onRemove: () => setD(p=>({...p, extraIncome:p.extraIncome.filter(r=>r.id!==row.id)}))
@@ -578,7 +578,7 @@ function LifeAssumptions() {
           extraIncome:[...p.extraIncome,{id:Date.now(),label:'',monthlyAmount:0,ageFrom:31,ageTo:65}]
         }))}, '+ Add Income Stream')
       ),
-      React.createElement(Section, {icon:'💸',title:'Extra Recurring Expenses'},
+      React.createElement(Section, {icon:'dollar-sign',title:'Extra Recurring Expenses'},
         ...(D.extraExpense||[]).map(row => React.createElement(ExtraRecRow, {key:row.id, row, cpiOption:true,
           onUpdate:(k,v) => setD(p=>({...p, extraExpense:p.extraExpense.map(r=>r.id===row.id?{...r,[k]:v}:r)})),
           onRemove: () => setD(p=>({...p, extraExpense:p.extraExpense.filter(r=>r.id!==row.id)}))
@@ -613,7 +613,7 @@ function WarnBanner({rows, D}) {
   const warnings = useMemo(()=>buildWarnings(rows, D), [rows, D]);
   if(warnings.length === 0) return null;
   return React.createElement('div', {className:'warn-banner'},
-    React.createElement('h4', null, '⚠ Sanity Checks'),
+    React.createElement('h4', null, React.createElement(IconLabel,{icon:'alert-triangle'},'Sanity Checks')),
     React.createElement('ul', null, ...warnings.map((w,i)=>React.createElement('li',{key:i},w)))
   );
 }
@@ -626,10 +626,10 @@ function LifeResults() {
   useEffect(() => localStorage.setItem('FP_Life_Res_Tab', sub), [sub]);
 
   const SUBS = [
-    {id:'summary',label:'📊 Milestones'},
-    {id:'cashflow',label:'💵 Cashflow'},
-    {id:'wealth',label:'📈 Wealth Growth'},
-    {id:'passive',label:'🎯 Passive Income'},
+    {id:'summary',icon:'bar-chart',label:'Milestones'},
+    {id:'cashflow',icon:'dollar-sign',label:'Cashflow'},
+    {id:'wealth',icon:'trending-up',label:'Wealth Growth'},
+    {id:'passive',icon:'target',label:'Passive Income'},
   ];
   const at = age => rows.find(r => r.age===age) || {};
   const currentAgeData = at(selectedAge);
@@ -665,7 +665,7 @@ function LifeResults() {
       )
     ),
     React.createElement('nav', {className:'subnav'},
-      ...SUBS.map(s => React.createElement('button', {key:s.id, className:'subnav-btn'+(sub===s.id?' active':''), onClick:()=>setSub(s.id)}, s.label))
+      ...SUBS.map(s => React.createElement('button', {key:s.id, className:'subnav-btn'+(sub===s.id?' active':''), onClick:()=>setSub(s.id)}, React.createElement(IconLabel,{icon:s.icon},s.label)))
     ),
 
     sub==='summary' && React.createElement('div', null,
@@ -722,10 +722,10 @@ function LifeResults() {
         )
       ),
       React.createElement('div', {className:'subnav', style:{borderBottom:'none',marginBottom:'1rem',marginTop:'1.5rem'}},
-        React.createElement('button', {className:'subnav-btn'+(cfTab==='flow'?' active':''), onClick:()=>setCfTab('flow')}, '💰 Operating Cash Flow'),
-        React.createElement('button', {className:'subnav-btn'+(cfTab==='tax'?' active':''), onClick:()=>setCfTab('tax')}, '📊 Tax Detail'),
-        React.createElement('button', {className:'subnav-btn'+(cfTab==='loan'?' active':''), onClick:()=>setCfTab('loan')}, '🏦 Mortgage & Wealth'),
-        D.strategy===3 && React.createElement('button', {className:'subnav-btn'+(cfTab==='ip'?' active':''), onClick:()=>setCfTab('ip')}, '🏗️ Investment Property')
+        React.createElement('button', {className:'subnav-btn'+(cfTab==='flow'?' active':''), onClick:()=>setCfTab('flow')}, React.createElement(IconLabel,{icon:'dollar-sign'},'Operating Cash Flow')),
+        React.createElement('button', {className:'subnav-btn'+(cfTab==='tax'?' active':''), onClick:()=>setCfTab('tax')}, React.createElement(IconLabel,{icon:'bar-chart'},'Tax Detail')),
+        React.createElement('button', {className:'subnav-btn'+(cfTab==='loan'?' active':''), onClick:()=>setCfTab('loan')}, React.createElement(IconLabel,{icon:'bank'},'Mortgage & Wealth')),
+        D.strategy===3 && React.createElement('button', {className:'subnav-btn'+(cfTab==='ip'?' active':''), onClick:()=>setCfTab('ip')}, React.createElement(IconLabel,{icon:'building'},'Investment Property'))
       ),
       React.createElement('div', {className:'chart-card'},
         React.createElement('div',{className:'chart-title'},
@@ -876,8 +876,8 @@ function LifePlanner({startingCash}) {
   return React.createElement(LifeProvider, {startingCash},
     React.createElement('div', null,
       React.createElement('nav', {className:'subnav subnav-primary', style:{marginBottom:'0'}},
-        React.createElement('button', {className:'subnav-btn'+(page==='assumptions'?' active':''), onClick:()=>setPage('assumptions')}, '⚙️ Assumptions'),
-        React.createElement('button', {className:'subnav-btn'+(page==='results'?' active':''), onClick:()=>setPage('results')}, '📊 Results')
+        React.createElement('button', {className:'subnav-btn'+(page==='assumptions'?' active':''), onClick:()=>setPage('assumptions')}, React.createElement(IconLabel,{icon:'settings'},'Assumptions')),
+        React.createElement('button', {className:'subnav-btn'+(page==='results'?' active':''), onClick:()=>setPage('results')}, React.createElement(IconLabel,{icon:'bar-chart'},'Results'))
       ),
       React.createElement('div', {style:{marginTop:'1.5rem'}},
         page==='assumptions' && React.createElement(LifeAssumptions, null),

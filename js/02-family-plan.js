@@ -155,9 +155,9 @@ function Section({icon,title,children,open:init=true}) {
   const [open,setOpen] = useState(init);
   return React.createElement('div', {className:'section-card'},
     React.createElement('div', {className:'section-header', onClick:()=>setOpen(o=>!o)},
-      React.createElement('div', {className:'section-icon'}, icon),
+      React.createElement('div', {className:'section-icon'}, React.createElement(Icon,{name:icon,size:18})),
       React.createElement('span', {className:'section-title'}, title),
-      React.createElement('span', {className:'section-chevron', style:{transform:open?'rotate(180deg)':'none'}}, '▼')
+      React.createElement('span', {className:'section-chevron', style:{display:'inline-flex',transform:open?'rotate(-90deg)':'rotate(90deg)',transition:'transform .2s'}}, React.createElement(Icon,{name:'chevron-right',size:14}))
     ),
     open && React.createElement('div', {className:'section-body'}, children)
   );
@@ -234,7 +234,7 @@ function DynRowItem({row,onUpdate,onRemove,fields}) {
     }),
     React.createElement('div', {className:'input-group', style:{justifyContent:'flex-end'}},
       React.createElement('label', {className:'input-label'}, '\u00a0'),
-      React.createElement('button', {className:'btn-remove', onClick:onRemove}, '✕')
+      React.createElement('button', {className:'btn-remove', onClick:onRemove}, React.createElement(Icon,{name:'x',size:14}))
     )
   );
 }
@@ -258,7 +258,7 @@ function Assumptions({onGo}) {
     React.createElement('h1', {className:'page-title'}, 'Assumptions'),
     React.createElement('p', {className:'page-subtitle'}, 'Edit any value freely. Saved automatically and synced across devices.'),
 
-    React.createElement(Section, {icon:'📅', title:'Key Dates'}, G(
+    React.createElement(Section, {icon:'calendar', title:'Key Dates'}, G(
       React.createElement(DateField, {label:'Your Salary Rises', hint:'$800→$1,323/wk', value:dates.yourSalRise, onChange:u('dates','yourSalRise')}),
       React.createElement(DateField, {label:'Wife Salary Phase 2', hint:'$736→$944/wk', value:dates.wifeP2, onChange:u('dates','wifeP2')}),
       React.createElement(DateField, {label:'Wife Salary Phase 3', hint:'$944→$1,500/wk', value:dates.wifeP3, onChange:u('dates','wifeP3')}),
@@ -274,7 +274,7 @@ function Assumptions({onGo}) {
       React.createElement(DateField, {label:'Tuition Payment 2', value:dates.tuit2, onChange:u('dates','tuit2')}),
     )),
 
-    React.createElement(Section, {icon:'💰', title:'Your Salary'},
+    React.createElement(Section, {icon:'dollar-sign', title:'Your Salary'},
       G(
         React.createElement(Field, {label:'Salary at Age 31', value:income.yourSalLow, onChange:u('income','yourSalLow'), prefix:true}),
         React.createElement(Field, {label:'Salary at Age 32', value:income.yourSalHigh, onChange:u('income','yourSalHigh'), prefix:true}),
@@ -294,7 +294,7 @@ function Assumptions({onGo}) {
         ]})
     ),
 
-    React.createElement(Section, {icon:'👩‍💼', title:'Wife Salary'},
+    React.createElement(Section, {icon:'user', title:'Wife Salary'},
       G(
         React.createElement(Field, {label:'Wife Salary Ph.1 /wk', value:income.wifeP1, onChange:u('income','wifeP1'), prefix:true}),
         React.createElement(Field, {label:'Wife Salary Ph.2 /wk', hint:'During masters', value:income.wifeP2, onChange:u('income','wifeP2'), prefix:true}),
@@ -303,13 +303,13 @@ function Assumptions({onGo}) {
       )
     ),
 
-    React.createElement(Section, {icon:'🏦', title:'Savings Accounts (AUD)'}, G(
+    React.createElement(Section, {icon:'bank', title:'Savings Accounts (AUD)'}, G(
       React.createElement(Field, {label:'Account A – Term Savings', hint:'Compounds at 4.5%', value:savings.acctA, onChange:u('savings','acctA'), prefix:true}),
       React.createElement(Field, {label:'Account B – Spending Acct', hint:'All surplus + draws', value:savings.acctB, onChange:u('savings','acctB'), prefix:true}),
       React.createElement(Field, {label:'Macquarie Rate p.a.', value:savings.macRate, onChange:u('savings','macRate'), pct:true}),
     )),
 
-    React.createElement(Section, {icon:'🛒', title:'Living Expenses (weekly, all-in incl. rent)'},
+    React.createElement(Section, {icon:'shopping-cart', title:'Living Expenses (weekly, all-in incl. rent)'},
       G(
         React.createElement(Field, {label:'Weekly Expenses Ph.1', hint:'Rent, food, transport', value:expenses.expWk, onChange:u('expenses','expWk'), prefix:true}),
         React.createElement(Field, {label:'Weekly Expenses Ph.2', value:expenses.expWkPost, onChange:u('expenses','expWkPost'), prefix:true}),
@@ -330,7 +330,7 @@ function Assumptions({onGo}) {
         ]})
     ),
 
-    React.createElement(Section, {icon:'🧒', title:'Childcare – Uziel'},
+    React.createElement(Section, {icon:'baby', title:'Childcare – Uziel'},
       G(
         React.createElement(Field, {label:'Centre Daily Rate', value:childcare.dailyRate, onChange:u('childcare','dailyRate'), prefix:true}),
         React.createElement(Field, {label:'ECT Discount %', value:childcare.discount, onChange:u('childcare','discount'), pct:true}),
@@ -345,7 +345,7 @@ function Assumptions({onGo}) {
       )
     ),
 
-    React.createElement(Section, {icon:'📊', title:'Tax Settings (Stage 3 ATO)', open:false},
+    React.createElement(Section, {icon:'bar-chart', title:'Tax Settings (Stage 3 ATO)', open:false},
       React.createElement('div', {className:'info-box', style:{marginBottom:'.75rem'}},
         React.createElement('p', null, 'Refund = work deductions × marginal tax rate, applied each July. Stage 3 brackets (16%/30%/37%/45%), LITO and Medicare handled automatically.')
       ),
@@ -356,7 +356,7 @@ function Assumptions({onGo}) {
       )
     ),
 
-    React.createElement(Section, {icon:'🏔️', title:'Nepal Savings (NRS)'},
+    React.createElement(Section, {icon:'mountain', title:'Nepal Savings (NRS)'},
       G(
         React.createElement(Field, {label:'No Interest (Lakh)', value:nepal.noInt, onChange:u('nepal','noInt')}),
         React.createElement(Field, {label:'Fixed 12% p.a. (Lakh)', value:nepal.fixed12, onChange:u('nepal','fixed12')}),
@@ -374,13 +374,13 @@ function Assumptions({onGo}) {
               onChange: e => { const v = parseFloat(e.target.value); if(!isNaN(v)) update('nepal','exchange',v); }})
           ),
           React.createElement('button', {className:'btn-fetch', onClick:fetchRate, disabled:nepal.exchangeLoading},
-            nepal.exchangeLoading ? 'Fetching…' : '🔄 Get Live Rate'),
-          nepal.exchangeAuto && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--green)',fontWeight:600}}, '✓ Live')
+            nepal.exchangeLoading ? 'Fetching…' : React.createElement(IconLabel,{icon:'refresh'},'Get Live Rate')),
+          nepal.exchangeAuto && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--green)',fontWeight:600}}, React.createElement(IconLabel,{icon:'check',size:11},'Live'))
         )
       )
     ),
 
-    React.createElement(Section, {icon:'📋', title:'One-Off Costs (from Acct B + 10% buffer)', open:false},
+    React.createElement(Section, {icon:'clipboard', title:'One-Off Costs (from Acct B + 10% buffer)', open:false},
       React.createElement('div', {className:'info-box', style:{marginBottom:'1rem'}},
         React.createElement('p', null, 'Set to $0 if not applicable. 10% buffer auto-added.')
       ),
@@ -421,7 +421,7 @@ function Assumptions({onGo}) {
     ),
 
     React.createElement('div', {className:'cta-row'},
-      React.createElement('button', {className:'btn-primary', onClick:onGo}, 'View Results →')
+      React.createElement('button', {className:'btn-primary', onClick:onGo, style:{display:'inline-flex',alignItems:'center',gap:'.3em'}}, 'View Results', React.createElement(Icon,{name:'chevron-right',size:14}))
     )
   );
 }
@@ -456,7 +456,7 @@ function Summary({rows,nepal}) {
       React.createElement('div', {className:'stat-card'},
         React.createElement('div',{className:'stat-label'},'AUD/NRS Rate'),
         React.createElement('div',{className:'stat-value',style:{fontSize:'var(--t-lg)'}},A.nepal.exchange),
-        React.createElement('div',{className:'stat-sub'},A.nepal.exchangeAuto?'✓ Live rate':'Manual')),
+        React.createElement('div',{className:'stat-sub'},A.nepal.exchangeAuto?React.createElement(IconLabel,{icon:'check',size:11},'Live rate'):'Manual')),
     ),
     React.createElement('div', {className:'chart-card'},
       React.createElement('div',{className:'chart-title'},'Account Balances Over Time'),
@@ -474,7 +474,7 @@ function Summary({rows,nepal}) {
         )
       )
     ),
-    React.createElement(Section, {icon:'🎯',title:'Milestone Timeline'},
+    React.createElement(Section, {icon:'target',title:'Milestone Timeline'},
       React.createElement('div', {className:'timeline'},
         ...[
           {m:'Jun-26',d:'warn',t:'Model starts. Your salary $800/wk. Wife $736/wk. Extra $630/wk active.'},
@@ -482,14 +482,14 @@ function Summary({rows,nepal}) {
           {m:'Nov-26',d:'warn',t:'Extra $630/wk stops.'},
           {m:'Jan-27',d:'warn',t:'Tuition Sem 2 ($9,500) from Account B.'},
           {m:'Jun-27',d:'warn',t:'Car $10,000 cash from Acct B. Wife finishes masters.'},
-          {m:'Jul-27',d:'warn',t:'⚠ BIGGEST HIT: 485 visa bundle. Childcare starts. Wife → $1,500/wk. Expenses → $950/wk.'},
+          {m:'Jul-27',d:'warn',icon:'alert-triangle',t:'BIGGEST HIT: 485 visa bundle. Childcare starts. Wife → $1,500/wk. Expenses → $950/wk.'},
           {m:'Aug-27',d:'',t:'Student visa expires → Bridging Visa A. Agent fees from Acct B.'},
-          {m:'Nov-27',d:'ok',t:'🎉 PR GRANTED. PR fees from Acct B. CCS kicks in.'},
-          {m:'Jul-28',d:'ok',t:'🎯 Target date. See total wealth above.'},
-        ].map(({m,d,t}) => React.createElement('div', {key:m,className:'tl-item'},
+          {m:'Nov-27',d:'ok',icon:'award',t:'PR GRANTED. PR fees from Acct B. CCS kicks in.'},
+          {m:'Jul-28',d:'ok',icon:'target',t:'Target date. See total wealth above.'},
+        ].map(({m,d,t,icon}) => React.createElement('div', {key:m,className:'tl-item'},
           React.createElement('div',{className:'tl-dot '+d}),
           React.createElement('div',{className:'tl-month'},m),
-          React.createElement('div',{className:'tl-desc'},t)
+          React.createElement('div',{className:'tl-desc'}, icon ? React.createElement(IconLabel,{icon},t) : t)
         ))
       )
     )
@@ -527,7 +527,7 @@ function Cashflow({rows}) {
               {h:'Met?', info:'Green check if Net Real met or beat the projected Net; red cross if it fell short. "—" means no Monthly Cash data yet, so nothing to compare. Click the icon to jump to that month in Monthly Cash.'},
               {h:'Acct B'}
             ].map(({h,info}) => React.createElement('th',{key:h}, h,
-              info && React.createElement('span',{title:info,style:{marginLeft:'.3rem',cursor:'help',color:'var(--text3)',fontWeight:400,textTransform:'none',letterSpacing:'normal'}},'ⓘ')
+              info && React.createElement(Icon,{name:'info',size:12,title:info,style:{marginLeft:'.3rem',cursor:'help',color:'var(--text3)'}})
             ))
           )),
           React.createElement('tbody', null,
@@ -559,8 +559,8 @@ function Cashflow({rows}) {
                     : React.createElement('button', {
                         onClick:()=>goToCashflowMonth(ymStr),
                         title:'View detail in Monthly Cash',
-                        style:{background:'none',border:'none',cursor:'pointer',fontSize:'1.05em',padding:'.1rem .3rem',color:met?'var(--green)':'var(--red)'}
-                      }, met?'✓':'✗')
+                        style:{background:'none',border:'none',cursor:'pointer',padding:'.1rem .3rem',color:met?'var(--green)':'var(--red)'}
+                      }, React.createElement(Icon,{name:met?'check':'x',size:15}))
                 ),
                 React.createElement('td',{className:r.balB>=0?'gold-t':'neg'},fmt(r.balB))
               );
@@ -789,7 +789,7 @@ function ProjectionVsActual() {
   );
 }
 
-const SUBNAV = [{id:'summary',label:'📊 Summary'},{id:'cashflow',label:'💵 Cashflow'},{id:'income',label:'📈 Income & Expenses'},{id:'nepal',label:'🏔️ Nepal'}];
+const SUBNAV = [{id:'summary',icon:'bar-chart',label:'Summary'},{id:'cashflow',icon:'dollar-sign',label:'Cashflow'},{id:'income',icon:'trending-up',label:'Income & Expenses'},{id:'nepal',icon:'mountain',label:'Nepal'}];
 
 function Results() {
   const {compute,nepalCalc} = useFinance();
@@ -801,7 +801,7 @@ function Results() {
     React.createElement('h1', {className:'page-title'}, 'Results'),
     React.createElement('p', {className:'page-subtitle'}, 'All figures reflect your current assumptions.'),
     React.createElement('nav', {className:'subnav'},
-      ...SUBNAV.map(n => React.createElement('button', {key:n.id, className:'subnav-btn'+(sub===n.id?' active':''), onClick:()=>setSub(n.id)}, n.label))
+      ...SUBNAV.map(n => React.createElement('button', {key:n.id, className:'subnav-btn'+(sub===n.id?' active':''), onClick:()=>setSub(n.id)}, React.createElement(IconLabel,{icon:n.icon},n.label)))
     ),
     sub==='summary' && React.createElement(Summary, {rows,nepal}),
     sub==='cashflow' && React.createElement(Cashflow, {rows}),
@@ -815,8 +815,8 @@ function Projection2028() {
   useEffect(() => localStorage.setItem('FP_Proj_Tab', subPage), [subPage]);
   return React.createElement('div', null,
     React.createElement('nav', {className:'subnav subnav-primary', style:{marginBottom:'0'}},
-      React.createElement('button', {className:'subnav-btn'+(subPage==='assumptions'?' active':''), onClick:()=>setSubPage('assumptions')}, '⚙️ Assumptions'),
-      React.createElement('button', {className:'subnav-btn'+(subPage==='results'?' active':''), onClick:()=>setSubPage('results')}, '📊 Results')
+      React.createElement('button', {className:'subnav-btn'+(subPage==='assumptions'?' active':''), onClick:()=>setSubPage('assumptions')}, React.createElement(IconLabel,{icon:'settings'},'Assumptions')),
+      React.createElement('button', {className:'subnav-btn'+(subPage==='results'?' active':''), onClick:()=>setSubPage('results')}, React.createElement(IconLabel,{icon:'bar-chart'},'Results'))
     ),
     React.createElement('div', {style:{marginTop:'1.5rem'}},
       subPage === 'assumptions' && React.createElement(Assumptions, {onGo:()=>setSubPage('results')}),

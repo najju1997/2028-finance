@@ -29,7 +29,7 @@ function WaterfallChart({ txns, rec }) {
   data.push({name:'Net', base:net < 0 ? 0 : 0, value:Math.abs(net), kind:net>=0?'positive':'negative', color:net>=0?'#22c55e':'#ef4444'});
 
   return React.createElement('div', {className:'chart-card'},
-    React.createElement('div', {className:'chart-title'}, '💰 Where Did the Money Go?'),
+    React.createElement('div', {className:'chart-title'}, React.createElement(IconLabel,{icon:'dollar-sign'},'Where Did the Money Go?')),
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.75rem',marginTop:'-.5rem'}},
       'Income flows in, expenses subtract down to your net cashflow. Tall drops = biggest categories.'),
     React.createElement(ResponsiveContainer, {width:'100%',height:Math.max(280, data.length * 30)},
@@ -76,18 +76,18 @@ function FixedVsVariable({ txns, rec }) {
   const realisticTarget = variable * 0.2;  // saving 20% of variable
 
   return React.createElement('div', {className:'chart-card'},
-    React.createElement('div', {className:'chart-title'}, '🔒 Fixed vs 🎯 Variable Spending'),
+    React.createElement('div', {className:'chart-title',style:{display:'flex',alignItems:'center',gap:'.5em'}}, React.createElement(IconLabel,{icon:'lock'},'Fixed'),'vs',React.createElement(IconLabel,{icon:'target'},'Variable Spending')),
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.75rem',marginTop:'-.5rem'}},
       'Fixed costs are locked in. Variable spending is where you have control.'),
     React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(220px,100%),1fr))',gap:'.75rem',marginBottom:'1rem'}},
       React.createElement('div', {style:{background:'var(--bg2)',border:'1px solid var(--border)',borderLeft:'3px solid #a78bfa',borderRadius:'var(--radius-sm)',padding:'.9rem'}},
-        React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.05em'}}, '🔒 Fixed Costs'),
+        React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.05em'}}, React.createElement(IconLabel,{icon:'lock',size:11},'Fixed Costs')),
         React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'1.8rem',color:'#a78bfa'}}, fmt(fixed)),
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, fixedPct.toFixed(0)+'% of total spend'),
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',marginTop:'.4rem',fontStyle:'italic'}}, 'Rent · utilities · insurance · phone')
       ),
       React.createElement('div', {style:{background:'var(--bg2)',border:'1px solid var(--border)',borderLeft:'3px solid var(--gold)',borderRadius:'var(--radius-sm)',padding:'.9rem'}},
-        React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.05em'}}, '🎯 Variable Spending'),
+        React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.3rem',textTransform:'uppercase',letterSpacing:'.05em'}}, React.createElement(IconLabel,{icon:'target',size:11},'Variable Spending')),
         React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'1.8rem',color:'var(--gold)'}}, fmt(variable)),
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, (100-fixedPct).toFixed(0)+'% of total spend'),
         React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',marginTop:'.4rem',fontStyle:'italic'}}, 'Groceries · eating out · shopping')
@@ -101,7 +101,7 @@ function FixedVsVariable({ txns, rec }) {
     // Insight box
     income > 0 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid '+(ceiling<0?'var(--red)':'var(--green)'),borderRadius:'var(--radius-sm)',marginTop:'.5rem'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:ceiling<0?'var(--red)':'var(--green)',marginBottom:'.25rem'}},
-        ceiling < 0 ? '⚠ Fixed costs exceed your income' : '💡 Your savings ceiling'),
+        React.createElement(IconLabel,{icon:ceiling<0?'alert-triangle':'lightbulb'}, ceiling<0?'Fixed costs exceed your income':'Your savings ceiling')),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.5}},
         ceiling < 0
           ? 'Income ' + fmt(income) + ' < fixed costs ' + fmt(fixed) + '. Variable spending of ' + fmt(variable) + ' added to the shortfall. Long-term you need either higher income or to renegotiate fixed costs.'
@@ -163,14 +163,14 @@ function RecurringDetector({ allTxns }) {
 
   if (monthsAvailable < 2) {
     return React.createElement('div', {className:'chart-card'},
-      React.createElement('div', {className:'chart-title'}, '🔁 Recurring Subscriptions'),
+      React.createElement('div', {className:'chart-title'}, React.createElement(IconLabel,{icon:'refresh'},'Recurring Subscriptions')),
       React.createElement('div', {style:{padding:'1.5rem',textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)'}},
         'Upload at least 2 months of data to detect recurring charges.')
     );
   }
   if (recurring.length === 0 && dismissedItems.length === 0) {
     return React.createElement('div', {className:'chart-card'},
-      React.createElement('div', {className:'chart-title'}, '🔁 Recurring Subscriptions'),
+      React.createElement('div', {className:'chart-title'}, React.createElement(IconLabel,{icon:'refresh'},'Recurring Subscriptions')),
       React.createElement('div', {style:{padding:'1.5rem',textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)'}},
         'No clear recurring charges detected.')
     );
@@ -195,11 +195,11 @@ function RecurringDetector({ allTxns }) {
       )),
       React.createElement('tbody', null,
         ...recurring.slice(0, 25).map((r,i) => {
-          const c = allCats[r.category] || {color:'#94a3b8',icon:'•'};
+          const c = allCats[r.category] || {color:'#94a3b8',icon:'tag'};
           return React.createElement('tr', {key:i},
             React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-sm)',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, r.merchant),
             React.createElement('td', {style:{textAlign:'left'}},
-              React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, c.icon+' '+r.category)
+              React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, React.createElement(IconLabel,{icon:c.icon,size:11},r.category))
             ),
             React.createElement('td', {style:{fontSize:'var(--t-xs)',color:'var(--text2)'}}, r.freqLabel),
             React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:600}}, fmt(r.avgAmount)),
@@ -210,7 +210,7 @@ function RecurringDetector({ allTxns }) {
                 style:btnDelStyle,
                 title:'Dismiss from list',
                 onClick:() => dismissRecurring(r.merchant)
-              }, '✕')
+              }, React.createElement(Icon,{name:'x',size:13}))
             ),
           );
         })
@@ -222,7 +222,7 @@ function RecurringDetector({ allTxns }) {
     React.createElement('button', {
       onClick:() => setShowDismissed(v => !v),
       style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:'var(--t-xs)',padding:0,display:'flex',alignItems:'center',gap:'.3rem'}
-    }, (showDismissed ? '▾' : '▸') + ' ' + dismissedItems.length + ' dismissed'),
+    }, React.createElement(Icon,{name:showDismissed?'arrow-down':'chevron-right',size:11}), ' ' + dismissedItems.length + ' dismissed'),
     showDismissed && React.createElement('div', {className:'table-wrap',style:{marginTop:'.5rem',opacity:.7}},
       React.createElement('table', {className:'data-table'},
         React.createElement('tbody', null,
@@ -248,7 +248,7 @@ function RecurringDetector({ allTxns }) {
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:'.5rem',marginBottom:'.75rem'}},
       React.createElement('div', null,
-        React.createElement('div', {className:'chart-title',style:{margin:0}}, '🔁 Recurring Subscriptions & Bills'),
+        React.createElement('div', {className:'chart-title',style:{margin:0}}, React.createElement(IconLabel,{icon:'refresh'},'Recurring Subscriptions & Bills')),
         React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'Auto-detected from spending patterns across ' + monthsAvailable + ' months')
       ),
       React.createElement('div', {style:{textAlign:'right'}},
@@ -283,7 +283,7 @@ function BNPLExposure({ allTxns, rec }) {
   const months = Object.keys(monthly).sort();
   if (!months.length) {
     return React.createElement('div', {className:'chart-card'},
-      React.createElement('div', {className:'chart-title'}, '📱 BNPL Exposure'),
+      React.createElement('div', {className:'chart-title'}, React.createElement(IconLabel,{icon:'smartphone'},'BNPL Exposure')),
       React.createElement('div', {style:{padding:'1.5rem',textAlign:'center',color:'var(--text3)',fontSize:'var(--t-sm)'}},
         'No BNPL repayments detected — good!')
     );
@@ -311,7 +311,7 @@ function BNPLExposure({ allTxns, rec }) {
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:'.5rem',marginBottom:'.75rem'}},
       React.createElement('div', null,
-        React.createElement('div', {className:'chart-title',style:{margin:0}}, '📱 BNPL Exposure Over Time'),
+        React.createElement('div', {className:'chart-title',style:{margin:0}}, React.createElement(IconLabel,{icon:'smartphone'},'BNPL Exposure Over Time')),
         React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'Money going to past purchases instead of current spending')
       ),
       React.createElement('div', {style:{textAlign:'right'}},
@@ -334,7 +334,7 @@ function BNPLExposure({ allTxns, rec }) {
     ),
     React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid '+(avgPct>15?'var(--red)':avgPct>8?'var(--gold)':'var(--green)'),borderRadius:'var(--radius-sm)',marginTop:'.75rem'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,marginBottom:'.25rem',color:avgPct>15?'var(--red)':avgPct>8?'var(--gold)':'var(--green)'}},
-        avgPct > 15 ? '⚠ High BNPL exposure — financial stress signal' : avgPct > 8 ? '⚡ Moderate BNPL usage' : '✓ BNPL well-controlled'),
+        React.createElement(IconLabel,{icon:avgPct>15?'alert-triangle':avgPct>8?'zap':'check'}, avgPct>15?'High BNPL exposure — financial stress signal':avgPct>8?'Moderate BNPL usage':'BNPL well-controlled')),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.5}},
         avgPct > 15
           ? 'Average ' + avgPct.toFixed(1) + '% of monthly income goes to BNPL repayments. This means a chunk of every paycheck is already spoken for before the month starts. Consider freezing new BNPL purchases until the balance is paid down.'
@@ -401,7 +401,7 @@ function CashRunway({ allTxns, rec }) {
       new Date(m+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'})))),
     mode === 'range' && React.createElement('div', {style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
       React.createElement('input', {type:'date',className:'input-field',style:{width:'auto',padding:'.3rem .5rem',fontSize:'var(--t-xs)'},value:rangeFrom,onChange:e=>setRangeFrom(e.target.value)}),
-      React.createElement('span', {style:{color:'var(--text3)',fontSize:'var(--t-xs)'}}, '→'),
+      React.createElement(Icon, {name:'chevron-right', size:12, style:{color:'var(--text3)'}}),
       React.createElement('input', {type:'date',className:'input-field',style:{width:'auto',padding:'.3rem .5rem',fontSize:'var(--t-xs)'},value:rangeTo,onChange:e=>setRangeTo(e.target.value)}),
     ),
     mode === 'all' && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}},
@@ -409,7 +409,7 @@ function CashRunway({ allTxns, rec }) {
   );
 
   return React.createElement('div', {className:'chart-card'},
-    React.createElement('div', {className:'chart-title'}, '⏱ Cash Burn Rate'),
+    React.createElement('div', {className:'chart-title'}, React.createElement(IconLabel,{icon:'zap'},'Cash Burn Rate')),
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'1rem',marginTop:'-.5rem'}},
       'How fast money is leaving your accounts'),
     periodSelector,
@@ -439,19 +439,19 @@ function CashRunway({ allTxns, rec }) {
           )
     ),
     net < 0 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--red)',borderRadius:'var(--radius-sm)'}},
-      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--red)',marginBottom:'.25rem'}}, '⚠ Cashflow alert'),
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--red)',marginBottom:'.25rem'}}, React.createElement(IconLabel,{icon:'alert-triangle'},'Cashflow alert')),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
         'You spent ' + fmt(deficit) + ' more than you earned this ' + periodLabel + '. ' +
         (mode === 'month' ? 'If this pattern continues for 12 months, that\'s ' + fmt(deficit*12) + ' coming from savings or borrowing. ' : '') +
         'To break even, either earn ' + fmt(deficit) + ' more or cut ' + fmt(deficit) + ' from spending.')
     ),
     net >= 0 && income > 0 && net < income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--gold)',borderRadius:'var(--radius-sm)'}},
-      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--gold)',marginBottom:'.25rem'}}, '⚡ Tight margins'),
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--gold)',marginBottom:'.25rem'}}, React.createElement(IconLabel,{icon:'zap'},'Tight margins')),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
         'Only saving ' + (net/income*100).toFixed(1) + '% of income this ' + periodLabel + ' — any unexpected expense would push you negative. Healthy buffer is 10-20% surplus.')
     ),
     net >= 0 && income > 0 && net >= income * 0.1 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--green)',borderRadius:'var(--radius-sm)'}},
-      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--green)',marginBottom:'.25rem'}}, '✓ Healthy surplus'),
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--green)',marginBottom:'.25rem'}}, React.createElement(IconLabel,{icon:'check'},'Healthy surplus')),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.6}},
         'Saving ' + fmt(net) + ' at ' + (net/income*100).toFixed(1) + '% of income this ' + periodLabel +
         (mode === 'month' ? '. Over a year that\'s ' + fmt(net*12) + ' — direct that to your house deposit, emergency fund, or Nepal goals.' : '.'))
@@ -498,7 +498,7 @@ function CategoryMonthChart({ allTxns, rec }) {
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'.5rem',marginBottom:'.75rem'}},
       React.createElement('div', null,
-        React.createElement('div', {className:'chart-title',style:{margin:0}}, '📅 Spending by Category — Monthly'),
+        React.createElement('div', {className:'chart-title',style:{margin:0}}, React.createElement(IconLabel,{icon:'calendar'},'Spending by Category — Monthly')),
         React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}}, 'Toggle categories to compare month-over-month trends')
       ),
       React.createElement('div', {style:{display:'flex',gap:'.4rem'}},
@@ -597,7 +597,7 @@ function CashflowDashboard() {
     if (next >= 0 && next < months.length) setSelMonth(months[next]);
   }
 
-  const CF_TABS = [{id:'overview',label:'📊 Overview'},{id:'analysis',label:'🔬 Analysis'},{id:'transactions',label:'🧾 Transactions'},{id:'statement',label:'📄 Statement'},{id:'plan',label:'📉 Plan vs Actual'},{id:'audit',label:'🔍 Audit'},{id:'budget',label:'🎯 Budget'}];
+  const CF_TABS = [{id:'overview',icon:'bar-chart',label:'Overview'},{id:'analysis',icon:'search',label:'Analysis'},{id:'transactions',icon:'file-text',label:'Transactions'},{id:'statement',icon:'clipboard',label:'Statement'},{id:'plan',icon:'trending-down',label:'Plan vs Actual'},{id:'audit',icon:'search',label:'Audit'},{id:'budget',icon:'target',label:'Budget'}];
   const fmtMonth = ym => new Date(ym+'-01').toLocaleDateString('en-AU',{month:'short',year:'numeric'});
   const yearsOf = useMemo(() => [...new Set(months.map(m => m.slice(0,4)))].sort().reverse(), [months]);
   const OWNERS = [{id:'both',label:'Both'},{id:'ujjan',label:'Ujjan'},{id:'saloni',label:'Saloni'}];
@@ -607,18 +607,18 @@ function CashflowDashboard() {
   return React.createElement('div', null,
     React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',marginBottom:'.6rem',alignItems:'center'}},
       React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em',marginRight:'.25rem'}}, 'Period:'),
-      React.createElement('button', {className:'subnav-btn'+(selMonth==='ALL'?' active':''),onClick:()=>setSelMonth('ALL')}, '📅 All Time'),
+      React.createElement('button', {className:'subnav-btn'+(selMonth==='ALL'?' active':''),onClick:()=>setSelMonth('ALL')}, React.createElement(IconLabel,{icon:'calendar'},'All Time')),
       React.createElement('div', {style:{display:'flex',alignItems:'center',gap:'.3rem',background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.15rem .3rem'}},
-        React.createElement('button', {onClick:()=>stepMonth(1),disabled:!canStepBack,title:'Previous month',style:{background:'none',border:'none',color:canStepBack?'var(--text2)':'var(--text3)',cursor:canStepBack?'pointer':'default',fontSize:'var(--t-sm)',padding:'.2rem .4rem',opacity:canStepBack?1:.4}}, '◀'),
+        React.createElement('button', {onClick:()=>stepMonth(1),disabled:!canStepBack,title:'Previous month',style:{background:'none',border:'none',color:canStepBack?'var(--text2)':'var(--text3)',cursor:canStepBack?'pointer':'default',padding:'.2rem .4rem',opacity:canStepBack?1:.4}}, React.createElement(Icon,{name:'chevron-left',size:14})),
         React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'160px',padding:'.3rem .5rem',border:'none',background:'transparent'},value:selMonth==='ALL'?'':selMonth,onChange:e=>setSelMonth(e.target.value)},
           ...yearsOf.map(y => React.createElement('optgroup', {key:y,label:y},
             ...months.filter(m => m.slice(0,4)===y).map(m => React.createElement('option', {key:m,value:m}, fmtMonth(m)+' ('+allTxns.filter(t=>t.date.slice(0,7)===m).length+')'))
           ))
         ),
-        React.createElement('button', {onClick:()=>stepMonth(-1),disabled:!canStepFwd,title:'Next month',style:{background:'none',border:'none',color:canStepFwd?'var(--text2)':'var(--text3)',cursor:canStepFwd?'pointer':'default',fontSize:'var(--t-sm)',padding:'.2rem .4rem',opacity:canStepFwd?1:.4}}, '▶')
+        React.createElement('button', {onClick:()=>stepMonth(-1),disabled:!canStepFwd,title:'Next month',style:{background:'none',border:'none',color:canStepFwd?'var(--text2)':'var(--text3)',cursor:canStepFwd?'pointer':'default',padding:'.2rem .4rem',opacity:canStepFwd?1:.4}}, React.createElement(Icon,{name:'chevron-right',size:14}))
       ),
       selMonth!=='ALL' && React.createElement('div', {style:{marginLeft:'auto',position:'relative'}},
-        React.createElement('button', {onClick:()=>setShowDelMenu(v=>!v),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)',whiteSpace:'nowrap'}}, '🗑️ Delete month'),
+        React.createElement('button', {onClick:()=>setShowDelMenu(v=>!v),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)',whiteSpace:'nowrap'}}, React.createElement(IconLabel,{icon:'trash',size:12},'Delete month')),
         showDelMenu && React.createElement('div', {style:{position:'absolute',top:'100%',right:0,marginTop:'.25rem',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 6px 16px rgba(0,0,0,.2)',zIndex:20,minWidth:'200px',overflow:'hidden'}},
           React.createElement('button', {onClick:()=>doDeleteMonth(null),style:{display:'block',width:'100%',textAlign:'left',background:'none',border:'none',borderBottom:'1px solid var(--border)',color:'var(--text)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.5rem .75rem',fontWeight:600}}, 'All accounts ('+monthTxns.length+')'),
           ...monthAccounts.map(a => React.createElement('button', {key:a,onClick:()=>doDeleteMonth(a),style:{display:'block',width:'100%',textAlign:'left',background:'none',border:'none',color:'var(--text2)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.5rem .75rem'}}, a+' ('+monthTxns.filter(t=>t.account===a).length+')'))
@@ -631,7 +631,7 @@ function CashflowDashboard() {
     ),
     React.createElement(CfSummaryCards, {txns:monthTxns, rec}),
     React.createElement('nav', {className:'subnav'},
-      ...CF_TABS.map(t => React.createElement('button', {key:t.id,className:'subnav-btn'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)}, t.label))
+      ...CF_TABS.map(t => React.createElement('button', {key:t.id,className:'subnav-btn'+(tab===t.id?' active':''),onClick:()=>setTab(t.id)}, React.createElement(IconLabel,{icon:t.icon},t.label)))
     ),
     tab==='overview' && React.createElement('div', null,
       React.createElement(SpendByCategory, {txns:monthTxns, rec, budgets:T.budgets||{}, onDrillCategory:drillCategory}),
@@ -658,13 +658,13 @@ function CashflowTracker() {
         React.createElement('p', {className:'page-subtitle'}, 'CommBank · Macquarie · Westpac · Auto-reconciled · No double-counting')
       ),
       hasTxns && React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap'}},
-        React.createElement('button', {className:'subnav-btn'+(showUpload?' active':''),onClick:()=>setShowUpload(o=>!o)}, showUpload?'✕ Close':'📂 Upload More Files'),
+        React.createElement('button', {className:'subnav-btn'+(showUpload?' active':''),onClick:()=>setShowUpload(o=>!o)}, React.createElement(IconLabel,{icon:showUpload?'x':'folder'},showUpload?'Close':'Upload More Files')),
         React.createElement('button', {onClick:()=>{if(confirm('Delete ALL transaction data? This cannot be undone.')) clearAll();},style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.4rem .75rem',borderRadius:'var(--radius-sm)'}}, 'Clear All')
       )
     ),
     (!hasTxns || showUpload) && React.createElement('div', {style:{marginBottom:'1.5rem'}}, React.createElement(UploadZone, {onDone:()=>setShowUpload(false)})),
     !hasTxns && React.createElement('div', {style:{textAlign:'center',padding:'3rem 2rem',color:'var(--text3)'}},
-      React.createElement('div', {style:{fontSize:'3rem',marginBottom:'1rem'}}, '📊'),
+      React.createElement('div', {style:{marginBottom:'1rem'}}, React.createElement(Icon,{name:'bar-chart',size:48})),
       React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontSize:'var(--t-xl)',fontWeight:700,marginBottom:'.5rem',color:'var(--text)'}}, 'No transactions yet'),
       React.createElement('div', {style:{fontSize:'var(--t-sm)'}}, 'Upload your CommBank, Macquarie or Westpac CSV exports to get started')
     ),

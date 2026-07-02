@@ -19,21 +19,21 @@
 // ═══════════════════════════════════════════════════════════════
 
 const CATS = {
-  'Income':         {color:'#22c55e', icon:'💰', kind:'income'},
-  'Transfers':      {color:'#6b7280', icon:'🔄', kind:'transfer'},
-  'Groceries':      {color:'#4ade80', icon:'🛒', kind:'expense'},
-  'Eating Out':     {color:'#fb923c', icon:'🍔', kind:'expense'},
-  'Transport/Fuel': {color:'#60a5fa', icon:'⛽', kind:'expense'},
-  'Utilities':      {color:'#a78bfa', icon:'💡', kind:'expense'},
-  'Rent/Housing':   {color:'#f472b6', icon:'🏠', kind:'expense'},
-  'Insurance':      {color:'#06b6d4', icon:'🛡️', kind:'expense'},
-  'Education':      {color:'#eab308', icon:'🎓', kind:'expense'},
-  'Healthcare':     {color:'#34d399', icon:'💊', kind:'expense'},
-  'Shopping':       {color:'#facc15', icon:'🛍️', kind:'expense'},
-  'Entertainment':  {color:'#818cf8', icon:'🎮', kind:'expense'},
-  'Tech':           {color:'#22d3ee', icon:'💻', kind:'expense'},
-  'BNPL/StepPay':   {color:'#f87171', icon:'📱', kind:'expense'},
-  'Other':          {color:'#94a3b8', icon:'💸', kind:'expense'},
+  'Income':         {color:'#22c55e', icon:'dollar-sign', kind:'income'},
+  'Transfers':      {color:'#6b7280', icon:'refresh', kind:'transfer'},
+  'Groceries':      {color:'#4ade80', icon:'shopping-cart', kind:'expense'},
+  'Eating Out':     {color:'#fb923c', icon:'utensils', kind:'expense'},
+  'Transport/Fuel': {color:'#60a5fa', icon:'fuel', kind:'expense'},
+  'Utilities':      {color:'#a78bfa', icon:'lightbulb', kind:'expense'},
+  'Rent/Housing':   {color:'#f472b6', icon:'home', kind:'expense'},
+  'Insurance':      {color:'#06b6d4', icon:'shield', kind:'expense'},
+  'Education':      {color:'#eab308', icon:'graduation-cap', kind:'expense'},
+  'Healthcare':     {color:'#34d399', icon:'pill', kind:'expense'},
+  'Shopping':       {color:'#facc15', icon:'shopping-bag', kind:'expense'},
+  'Entertainment':  {color:'#818cf8', icon:'gamepad', kind:'expense'},
+  'Tech':           {color:'#22d3ee', icon:'laptop', kind:'expense'},
+  'BNPL/StepPay':   {color:'#f87171', icon:'smartphone', kind:'expense'},
+  'Other':          {color:'#94a3b8', icon:'tag', kind:'expense'},
 };
 
 const EXPENSE_CATS = Object.keys(CATS).filter(c => CATS[c].kind === 'expense');
@@ -465,7 +465,7 @@ function UploadZone({ onDone }) {
   function doImport() { importTransactions(previews.flatMap(f=>f.txns)); setPreviews([]); if(onDone) onDone(); }
 
   const totalFresh = previews.reduce((s,f) => s+f.fresh, 0);
-  const bankLabel = {commbank:'🏦 CommBank',macquarie:'🏛 Macquarie',westpac:'🔴 Westpac',unknown:'❓ Unknown'};
+  const bankLabel = {commbank:{icon:'bank',label:'CommBank'},macquarie:{icon:'landmark',label:'Macquarie'},westpac:{icon:'circle',label:'Westpac'},unknown:{icon:'help-circle',label:'Unknown'}};
 
   return React.createElement('div', null,
     React.createElement('div', {
@@ -476,7 +476,7 @@ function UploadZone({ onDone }) {
       style:{border:'2px dashed '+(drag?'var(--gold)':'var(--border2)'),borderRadius:'var(--radius)',padding:'2rem 1.5rem',textAlign:'center',cursor:'pointer',transition:'all .2s',background:drag?'rgba(212,175,55,.07)':'var(--bg2)',marginBottom:previews.length?'1rem':'0'}
     },
       React.createElement('input', {ref:inputRef,type:'file',accept:'.csv',multiple:true,style:{display:'none'},onChange:e=>processFiles(e.target.files)}),
-      React.createElement('div', {style:{fontSize:'2rem',marginBottom:'.4rem'}}, drag?'📥':'📂'),
+      React.createElement('div', {style:{marginBottom:'.4rem'}}, React.createElement(Icon,{name:drag?'inbox':'folder',size:32})),
       React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-md)',color:drag?'var(--gold)':'var(--text)',marginBottom:'.25rem'}},
         drag?'Release to upload':'Drag & drop CSVs here'),
       React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, 'CommBank · Macquarie · Westpac · multi-file supported  ·  Click to browse')
@@ -488,29 +488,29 @@ function UploadZone({ onDone }) {
             React.createElement('div', {style:{flex:1,minWidth:'120px'}},
               React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'.15rem',wordBreak:'break-all'}}, f.fname),
               React.createElement('div', {style:{display:'flex',gap:'.4rem',flexWrap:'wrap',alignItems:'center'}},
-                React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:'rgba(74,158,255,.12)',color:'var(--blue)'}}, bankLabel[f.bank]||'CSV'),
+                React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:'rgba(74,158,255,.12)',color:'var(--blue)'}}, React.createElement(IconLabel,{icon:(bankLabel[f.bank]||{icon:'file-text'}).icon,size:12},(bankLabel[f.bank]||{label:'CSV'}).label)),
                 React.createElement('span', {style:{fontSize:'var(--t-sm)',fontWeight:600,color:'var(--text)'}}, f.total+' rows'),
                 f.dupes > 0 && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--gold)',background:'rgba(212,175,55,.1)',padding:'.1rem .4rem',borderRadius:'.5rem'}}, f.dupes+' dupes'),
                 f.fresh > 0 && React.createElement('span', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:'var(--green)',background:'rgba(74,222,128,.1)',padding:'.1rem .4rem',borderRadius:'.5rem'}}, '+'+f.fresh+' new'),
-                f.error && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--red)'}}, '⚠ '+f.error)
+                f.error && React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--red)'}}, React.createElement(IconLabel,{icon:'alert-triangle',size:12},f.error))
               )
             ),
             React.createElement('div', {className:'input-group',style:{margin:0,minWidth:'155px',flex:'1 1 155px'}},
               React.createElement('label', {className:'input-label'}, 'Account name'),
               React.createElement('input', {type:'text',className:'input-field',value:f.account||'',onChange:e=>renameAcct(i,e.target.value)})
             ),
-            React.createElement('button', {onClick:()=>removePrev(i),title:'Remove',style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:'1rem',padding:'.25rem .4rem',flexShrink:0}}, '✕')
+            React.createElement('button', {onClick:()=>removePrev(i),title:'Remove',style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:'.25rem .4rem',flexShrink:0}}, React.createElement(Icon,{name:'x',size:16}))
           ),
           React.createElement('div', {style:{padding:'.55rem 1rem',display:'flex',gap:'.3rem',flexWrap:'wrap'}},
             ...getCatCounts(f.txns).map(([cat,n]) => {
-              const c = CATS[cat]||{color:'#94a3b8',icon:'•'};
-              return React.createElement('span', {key:cat,style:{fontSize:'var(--t-xs)',padding:'.15rem .45rem',borderRadius:'1rem',background:c.color+'1a',color:c.color,border:'1px solid '+c.color+'44'}}, c.icon+' '+cat+' ('+n+')');
+              const c = CATS[cat]||{color:'#94a3b8',icon:'tag'};
+              return React.createElement('span', {key:cat,style:{fontSize:'var(--t-xs)',padding:'.15rem .45rem',borderRadius:'1rem',background:c.color+'1a',color:c.color,border:'1px solid '+c.color+'44'}}, React.createElement(IconLabel,{icon:c.icon,size:11},cat+' ('+n+')'));
             })
           )
         ))
       ),
       React.createElement('button', {className:'btn-primary',onClick:doImport,style:{width:'100%',opacity:totalFresh===0?.5:1,cursor:totalFresh===0?'not-allowed':'pointer'}},
-        totalFresh > 0 ? '✓ Import '+totalFresh+' new transaction'+(totalFresh!==1?'s':'')+' from '+previews.length+' file'+(previews.length!==1?'s':'') : 'No new transactions — all duplicates')
+        totalFresh > 0 ? React.createElement(IconLabel,{icon:'check'},'Import '+totalFresh+' new transaction'+(totalFresh!==1?'s':'')+' from '+previews.length+' file'+(previews.length!==1?'s':'')) : 'No new transactions — all duplicates')
     )
   );
 }
@@ -539,8 +539,8 @@ function ManualAddModal({ accounts, onClose }) {
   return React.createElement('div', {onClick:onClose,style:{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}},
     React.createElement('div', {onClick:e=>e.stopPropagation(),style:{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius)',padding:'1.25rem',width:'100%',maxWidth:'480px',maxHeight:'90vh',overflowY:'auto'}},
       React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem'}},
-        React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'var(--t-lg)',color:'var(--gold)'}}, '➕ Add Transaction'),
-        React.createElement('button', {onClick:onClose,style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:'1.2rem'}}, '✕')
+        React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:'var(--t-lg)',color:'var(--gold)'}}, React.createElement(IconLabel,{icon:'plus'},'Add Transaction')),
+        React.createElement('button', {onClick:onClose,style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)'}}, React.createElement(Icon,{name:'x',size:18}))
       ),
       React.createElement('div', {style:{display:'flex',gap:'.5rem',marginBottom:'.75rem'}},
         ...[['expense','Expense','var(--red)'],['income','Income','var(--green)'],['transfer','Transfer','var(--text3)']].map(([k,lbl,col]) =>
@@ -608,7 +608,7 @@ function CfSummaryCards({ txns, rec }) {
     React.createElement('div', {className:'stat-card'},
       React.createElement('div', {className:'stat-label'}, 'Net Cash Flow'),
       React.createElement('div', {className:'stat-value',style:{color:net>=0?'var(--green)':'var(--red)'}}, (net>=0?'+':'')+fmt(net)),
-      React.createElement('div', {className:'stat-sub'}, net>=0?'✓ Positive':'⚠ Overspent')
+      React.createElement('div', {className:'stat-sub'}, React.createElement(IconLabel,{icon:net>=0?'check':'alert-triangle',size:11},net>=0?'Positive':'Overspent'))
     ),
     React.createElement('div', {className:'stat-card'},
       React.createElement('div', {className:'stat-label'}, 'Savings Rate'),
@@ -636,7 +636,7 @@ function SpendByCategory({ txns, rec, budgets, onDrillCategory }) {
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.5rem',flexWrap:'wrap',gap:'.5rem'}},
       React.createElement('div', {className:'chart-title',style:{margin:0}}, 'Spending by Category'),
-      React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, '👆 Double-click a bar to see those transactions')
+      React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)'}}, React.createElement(IconLabel,{icon:'arrow-up',size:11},'Double-click a bar to see those transactions'))
     ),
     React.createElement(ResponsiveContainer, {width:'100%',height:Math.max(220, data.length*44)},
       React.createElement(BarChart, {data,layout:'vertical',margin:{top:0,right:70,left:8,bottom:0}},
@@ -708,7 +708,7 @@ function InsightsPanel({ txns, rec, selectedMonth }) {
     });
     const summary = {month:selectedMonth,income:parseFloat(income.toFixed(2)),expenses:parseFloat(expenses.toFixed(2)),net:parseFloat(net.toFixed(2)),savingsRatePct:parseFloat(savRate.toFixed(1)),categories:Object.entries(catAmt).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>({cat,amt:parseFloat(amt.toFixed(2)),pct:parseFloat((amt/expenses*100).toFixed(1))})),topMerchants:Object.entries(merchantAmt).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([m,a])=>({merchant:m,total:parseFloat(a.toFixed(2))})),accounts:[...new Set(txns.map(t=>t.account))],context:'Australian family in Western Sydney. Renting. Child (Uziel). Visa pathway to PR.'};
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are a sharp personal finance analyst for an Australian household. Return ONLY a valid JSON object — no markdown fences, no text outside the JSON.',messages:[{role:'user',content:'Analyse this monthly cashflow and return EXACTLY this JSON (fill with real numbers and specifics):\n{"headline":"punchy 1-sentence summary with a key $ number (max 14 words)","insights":[{"type":"positive","icon":"✅","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"warning","icon":"⚠️","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"tip","icon":"💡","title":"actionable tip","body":"concrete and specific 1-2 sentences"}],"recommendation":"single most impactful action for next month (1 sentence)"}\n\nData: '+JSON.stringify(summary)}]})});
+      const res = await fetch('https://api.anthropic.com/v1/messages', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are a sharp personal finance analyst for an Australian household. Return ONLY a valid JSON object — no markdown fences, no text outside the JSON.',messages:[{role:'user',content:'Analyse this monthly cashflow and return EXACTLY this JSON (fill with real numbers and specifics):\n{"headline":"punchy 1-sentence summary with a key $ number (max 14 words)","insights":[{"type":"positive","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"warning","title":"short title","body":"1-2 sentences with specific amounts"},{"type":"tip","title":"actionable tip","body":"concrete and specific 1-2 sentences"}],"recommendation":"single most impactful action for next month (1 sentence)"}\n\nData: '+JSON.stringify(summary)}]})});
       if (!res.ok) throw new Error('API '+res.status);
       const data = await res.json();
       const raw = (data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('').trim();
@@ -716,10 +716,13 @@ function InsightsPanel({ txns, rec, selectedMonth }) {
     } catch (e) { setErr('Could not generate insights: '+e.message); } finally { setLoading(false); }
   }
   const typeColor = {positive:'var(--green)',warning:'var(--gold)',tip:'var(--blue)'};
+  const typeIcon = {positive:'check-circle',warning:'alert-triangle',tip:'lightbulb'};
   return React.createElement('div', {className:'chart-card'},
     React.createElement('div', {style:{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'.5rem',marginBottom:ins?'1rem':0}},
-      React.createElement('div', {className:'chart-title',style:{margin:0}}, '🤖 AI Financial Insights'),
-      React.createElement('button', {onClick:generate,disabled:loading,style:{background:'var(--gold)',color:'#0b0e14',border:'none',borderRadius:'var(--radius-sm)',padding:'.4rem 1rem',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',cursor:loading?'wait':'pointer',opacity:loading?.7:1}}, loading?'⏳ Analysing…':ins?'🔄 Regenerate':'✨ Generate Insights')
+      React.createElement('div', {className:'chart-title',style:{margin:0}}, React.createElement(IconLabel,{icon:'sparkles'},'AI Financial Insights')),
+      React.createElement('button', {onClick:generate,disabled:loading,style:{background:'var(--gold)',color:'#0b0e14',border:'none',borderRadius:'var(--radius-sm)',padding:'.4rem 1rem',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',cursor:loading?'wait':'pointer',opacity:loading?.7:1}},
+        React.createElement(IconLabel,{icon:loading?'refresh':(ins?'refresh':'sparkles')}, loading?'Analysing…':ins?'Regenerate':'Generate Insights')
+      )
     ),
     err && React.createElement('div', {style:{marginTop:'.75rem',color:'var(--red)',fontSize:'var(--t-xs)',padding:'.6rem .9rem',background:'rgba(224,85,85,.08)',borderRadius:'var(--radius-sm)'}}, err),
     !ins && !loading && !err && React.createElement('div', {style:{color:'var(--text3)',fontSize:'var(--t-sm)',padding:'.75rem 0'}}, 'Click Generate for AI-powered analysis of your '+selectedMonth+' spending.'),
@@ -727,7 +730,7 @@ function InsightsPanel({ txns, rec, selectedMonth }) {
       React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderRadius:'var(--radius-sm)',borderLeft:'3px solid var(--gold)',marginBottom:'1rem',fontSize:'var(--t-md)',fontWeight:600,lineHeight:1.4}}, ins.headline),
       React.createElement('div', {style:{display:'flex',flexDirection:'column',gap:'.5rem',marginBottom:'.75rem'}},
         ...(ins.insights||[]).map((item,idx) => React.createElement('div', {key:idx,style:{padding:'.6rem .9rem',borderRadius:'var(--radius-sm)',background:(typeColor[item.type]||'#94a3b8')+'12',border:'1px solid '+(typeColor[item.type]||'#94a3b8')+'30',display:'flex',gap:'.65rem',alignItems:'flex-start'}},
-          React.createElement('span', {style:{fontSize:'1.1em',flexShrink:0,marginTop:'.1rem'}}, item.icon),
+          React.createElement(Icon, {name:typeIcon[item.type]||'help-circle', size:16, style:{flexShrink:0,marginTop:'.1rem',color:typeColor[item.type]||'#94a3b8'}}),
           React.createElement('div', null,
             React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-sm)',color:typeColor[item.type]||'var(--text2)',marginBottom:'.1rem'}}, item.title),
             React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.55}}, item.body)
@@ -735,7 +738,7 @@ function InsightsPanel({ txns, rec, selectedMonth }) {
         ))
       ),
       React.createElement('div', {style:{padding:'.6rem .9rem',borderRadius:'var(--radius-sm)',background:'rgba(74,158,255,.08)',border:'1px solid rgba(74,158,255,.28)',display:'flex',gap:'.6rem',alignItems:'flex-start'}},
-        React.createElement('span', {style:{fontSize:'1em',flexShrink:0}}, '🎯'),
+        React.createElement(Icon, {name:'target', size:16, style:{flexShrink:0,color:'var(--blue)'}}),
         React.createElement('div', null,
           React.createElement('div', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',color:'var(--blue)',marginBottom:'.1rem',textTransform:'uppercase',letterSpacing:'.05em'}}, 'Next Month'),
           React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text2)',lineHeight:1.55}}, ins.recommendation)
@@ -784,7 +787,8 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
   function bulkHide(hide) { bulkSetHidden([...selected],hide); setSelected(new Set()); }
   function bulkDel() { if (!confirm('Delete '+selected.size+' transactions? Cannot be undone.')) return; bulkDelete([...selected]); setSelected(new Set()); }
 
-  const STh = ({col,label,align,width}) => React.createElement('th', {onClick:()=>toggleSort(col),style:{cursor:'pointer',userSelect:'none',color:sortCol===col?'var(--gold)':'var(--text2)',textAlign:align||'right',whiteSpace:'nowrap',width:width||'auto'}}, label+(sortCol===col?(sortDir==='asc'?' ↑':' ↓'):''));
+  const STh = ({col,label,align,width}) => React.createElement('th', {onClick:()=>toggleSort(col),style:{cursor:'pointer',userSelect:'none',color:sortCol===col?'var(--gold)':'var(--text2)',textAlign:align||'right',whiteSpace:'nowrap',width:width||'auto'}},
+    label, sortCol===col && React.createElement(Icon,{name:sortDir==='asc'?'arrow-up':'arrow-down',size:11,style:{marginLeft:'.25rem'}}));
 
   const expTotal = filtered.filter(t=>isExpenseTxn(t,rec)).reduce((s,t)=>s+Math.abs(t.amount),0);
   const incTotal = filtered.filter(t=>isIncomeTxn(t,rec)).reduce((s,t)=>s+t.amount,0);
@@ -792,17 +796,17 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
 
   return React.createElement('div', null,
     React.createElement('div', {style:{display:'flex',gap:'.6rem',flexWrap:'wrap',marginBottom:'.75rem',alignItems:'center'}},
-      React.createElement('button', {onClick:()=>setShowAdd(true),style:{background:'var(--gold)',color:'#0b0e14',border:'none',padding:'.4rem .9rem',borderRadius:'var(--radius-sm)',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',cursor:'pointer',whiteSpace:'nowrap'}}, '➕ Add'),
-      React.createElement('input', {type:'text',className:'input-field',placeholder:'🔍 Search…',value:search,onChange:e=>setSearch(e.target.value),style:{flex:'1 1 140px',minWidth:'120px'}}),
+      React.createElement('button', {onClick:()=>setShowAdd(true),style:{background:'var(--gold)',color:'#0b0e14',border:'none',padding:'.4rem .9rem',borderRadius:'var(--radius-sm)',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',cursor:'pointer',whiteSpace:'nowrap'}}, React.createElement(IconLabel,{icon:'plus'},'Add')),
+      React.createElement('input', {type:'text',className:'input-field',placeholder:'Search…',value:search,onChange:e=>setSearch(e.target.value),style:{flex:'1 1 140px',minWidth:'120px'}}),
       React.createElement('select', {className:'input-field',style:{flex:'0 1 120px',minWidth:'110px'},value:filterKind,onChange:e=>setFilterKind(e.target.value)},
         React.createElement('option', {value:'All'}, 'All types'),
-        React.createElement('option', {value:'income'}, '💰 Income'),
-        React.createElement('option', {value:'expense'}, '💸 Expenses'),
-        React.createElement('option', {value:'transfer'}, '🔄 Transfers'),
+        React.createElement('option', {value:'income'}, 'Income'),
+        React.createElement('option', {value:'expense'}, 'Expenses'),
+        React.createElement('option', {value:'transfer'}, 'Transfers'),
       ),
       React.createElement('select', {className:'input-field',style:{flex:'0 1 150px',minWidth:'130px'},value:filterCat,onChange:e=>setFilterCat(e.target.value)},
         React.createElement('option', {value:'All'}, 'All categories'),
-        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},allCats[c].icon+' '+c))
+        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},c))
       ),
       React.createElement('select', {className:'input-field',style:{flex:'0 1 150px',minWidth:'130px'},value:filterAcct,onChange:e=>setFilterAcct(e.target.value)},
         ...accounts.map(a => React.createElement('option',{key:a,value:a},a==='All'?'All accounts':a))
@@ -814,12 +818,12 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
     selected.size > 0 && React.createElement('div', {style:{display:'flex',gap:'.5rem',flexWrap:'wrap',alignItems:'center',padding:'.55rem .8rem',background:'rgba(212,175,55,.1)',border:'1px solid var(--gold-dim)',borderRadius:'var(--radius-sm)',marginBottom:'.5rem'}},
       React.createElement('span', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--gold)'}}, selected.size+' selected'),
       React.createElement('select', {style:{background:'var(--surface)',color:'var(--text)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.25rem .5rem',fontSize:'var(--t-xs)',cursor:'pointer'},onChange:e=>{if(e.target.value){bulkChangeCat(e.target.value);e.target.value='';}}, defaultValue:''},
-        React.createElement('option', {value:'',disabled:true}, '↳ Change category…'),
-        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},allCats[c].icon+' '+c))
+        React.createElement('option', {value:'',disabled:true}, 'Change category…'),
+        ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c},c))
       ),
-      React.createElement('button', {onClick:()=>bulkHide(true),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, '🙈 Hide'),
-      React.createElement('button', {onClick:()=>bulkHide(false),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, '👁 Unhide'),
-      React.createElement('button', {onClick:bulkDel,style:{background:'rgba(224,85,85,.15)',border:'1px solid var(--red)',color:'var(--red)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, '🗑 Delete'),
+      React.createElement('button', {onClick:()=>bulkHide(true),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, React.createElement(IconLabel,{icon:'eye-off',size:12},'Hide')),
+      React.createElement('button', {onClick:()=>bulkHide(false),style:{background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, React.createElement(IconLabel,{icon:'eye',size:12},'Unhide')),
+      React.createElement('button', {onClick:bulkDel,style:{background:'rgba(224,85,85,.15)',border:'1px solid var(--red)',color:'var(--red)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontSize:'var(--t-xs)'}}, React.createElement(IconLabel,{icon:'trash',size:12},'Delete')),
       React.createElement('button', {onClick:()=>setSelected(new Set()),style:{marginLeft:'auto',background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)'}}, 'Clear')
     ),
     React.createElement('div', {style:{display:'flex',gap:'1rem',marginBottom:'.6rem',fontSize:'var(--t-xs)',color:'var(--text3)',flexWrap:'wrap'}},
@@ -849,17 +853,17 @@ function TransactionTable({ txns, rec, filterCat, setFilterCat, allTxnsForAcct }
               React.createElement('td', {style:{textAlign:'left',fontSize:'var(--t-xs)',color:'var(--text3)',whiteSpace:'nowrap'}}, t.date),
               React.createElement('td', {className:'cf-col-desc',style:{textAlign:'left',fontSize:'var(--t-sm)',whiteSpace:'normal',wordBreak:'break-word'}},
                 t.description,
-                t.manual && React.createElement('span', {title:'Manual',style:{marginLeft:'.3rem',color:'var(--gold)'}}, '✏️'),
-                reconciled && React.createElement('span', {title:'Reconciled internal '+(recInfo&&recInfo.type==='steppay'?'StepPay loan':'transfer')+' — not counted',style:{marginLeft:'.3rem',color:'var(--blue)'}}, recInfo&&recInfo.type==='steppay'?'🔁':'🔗')
+                t.manual && React.createElement(Icon,{name:'edit',size:12,title:'Manual',style:{marginLeft:'.3rem',color:'var(--gold)'}}),
+                reconciled && React.createElement(Icon,{name:recInfo&&recInfo.type==='steppay'?'refresh':'link',size:12,title:'Reconciled internal '+(recInfo&&recInfo.type==='steppay'?'StepPay loan':'transfer')+' — not counted',style:{marginLeft:'.3rem',color:'var(--blue)'}})
               ),
               React.createElement('td', {className:'cf-col-acct',style:{textAlign:'left',fontSize:'var(--t-xs)',color:'var(--text3)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}, t.account),
               React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,color:reconciled?'var(--text3)':(t.amount>0?'var(--green)':'var(--text)'),whiteSpace:'nowrap',textDecoration:reconciled?'line-through':'none'}}, (t.amount>0?'+':'')+fmt(t.amount)),
               React.createElement('td', {style:{textAlign:'left'}},
                 React.createElement('select', {value:t.category,onChange:e=>updateCategory(t.id,e.target.value),style:{background:catMeta.color+'1a',color:catMeta.color,border:'1px solid '+catMeta.color+'50',borderRadius:'1rem',padding:'.15rem .5rem',fontSize:'var(--t-xs)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",width:'100%',maxWidth:'150px'}},
-                  ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c,style:{background:'var(--surface2)',color:'var(--text)'}},allCats[c].icon+' '+c))
+                  ...Object.keys(allCats).map(c => React.createElement('option',{key:c,value:c,style:{background:'var(--surface2)',color:'var(--text)'}},c))
                 )
               ),
-              React.createElement('td', {className:'cf-col-vis',style:{textAlign:'center'}}, React.createElement('button', {onClick:()=>toggleHidden(t.id),title:t.hidden?'Unhide':'Hide',style:{background:'none',border:'none',cursor:'pointer',fontSize:'.85em',color:t.hidden?'var(--gold)':'var(--text3)',padding:'.2rem .3rem'}}, t.hidden?'👁':'🙈'))
+              React.createElement('td', {className:'cf-col-vis',style:{textAlign:'center'}}, React.createElement('button', {onClick:()=>toggleHidden(t.id),title:t.hidden?'Unhide':'Hide',style:{background:'none',border:'none',cursor:'pointer',color:t.hidden?'var(--gold)':'var(--text3)',padding:'.2rem .3rem'}}, React.createElement(Icon,{name:t.hidden?'eye':'eye-off',size:14})))
             );
           })
         )
@@ -891,26 +895,26 @@ function ReconciliationAudit({ txns, rec }) {
   const tTotal = transferPairs.reduce((s,p) => s+Math.abs(p.a.amount), 0);
   return React.createElement('div', {className:'chart-card',style:{borderLeft:'3px solid var(--blue)'}},
     React.createElement('div', {className:'chart-title',style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'.5rem'}},
-      React.createElement('span', null, '🔍 Reconciliation Audit'),
+      React.createElement('span', null, React.createElement(IconLabel,{icon:'search'},'Reconciliation Audit')),
       React.createElement('span', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',fontWeight:400}}, pairs.length+' pair'+(pairs.length!==1?'s':'')+' auto-matched · excluded from totals')
     ),
     steppayPairs.length > 0 && React.createElement('div', {style:{marginBottom:'.75rem'}},
-      React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:'#f87171',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.4rem'}}, '🔁 StepPay Loan Settlements (' + steppayPairs.length + ', total ' + fmt(stTotal) + ')'),
+      React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:'#f87171',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.4rem'}}, React.createElement(IconLabel,{icon:'refresh',size:12},'StepPay Loan Settlements (' + steppayPairs.length + ', total ' + fmt(stTotal) + ')')),
       React.createElement('div', {style:{display:'flex',flexDirection:'column',gap:'.25rem',maxHeight:'160px',overflowY:'auto'}},
         ...steppayPairs.slice(0,40).map((p,i) => React.createElement('div', {key:i,style:{display:'flex',gap:'.5rem',fontSize:'var(--t-xs)',color:'var(--text3)',padding:'.25rem .5rem',background:'var(--bg2)',borderRadius:'var(--radius-sm)',alignItems:'center',flexWrap:'wrap'}},
           React.createElement('span', {style:{color:'var(--text2)',whiteSpace:'nowrap'}}, p.a.date),
-          React.createElement('span', {style:{flex:1,minWidth:'140px'}}, p.a.description.slice(0,40)+' ↔ '+p.b.description.slice(0,40)),
+          React.createElement('span', {style:{flex:1,minWidth:'140px',display:'inline-flex',alignItems:'center',gap:'.35em'}}, p.a.description.slice(0,40), React.createElement(Icon,{name:'arrows-h',size:11}), p.b.description.slice(0,40)),
           React.createElement('span', {style:{fontWeight:700,color:'#f87171',whiteSpace:'nowrap'}}, fmt(Math.abs(p.a.amount)))
         )),
         steppayPairs.length > 40 && React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',padding:'.25rem .5rem'}}, '... and '+(steppayPairs.length-40)+' more')
       )
     ),
     transferPairs.length > 0 && React.createElement('div', null,
-      React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:'var(--blue)',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.4rem'}}, '🔗 Internal Account Transfers (' + transferPairs.length + ', total ' + fmt(tTotal) + ')'),
+      React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:'var(--blue)',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'.4rem'}}, React.createElement(IconLabel,{icon:'link',size:12},'Internal Account Transfers (' + transferPairs.length + ', total ' + fmt(tTotal) + ')')),
       React.createElement('div', {style:{display:'flex',flexDirection:'column',gap:'.25rem',maxHeight:'160px',overflowY:'auto'}},
         ...transferPairs.slice(0,40).map((p,i) => React.createElement('div', {key:i,style:{display:'flex',gap:'.5rem',fontSize:'var(--t-xs)',color:'var(--text3)',padding:'.25rem .5rem',background:'var(--bg2)',borderRadius:'var(--radius-sm)',alignItems:'center',flexWrap:'wrap'}},
           React.createElement('span', {style:{color:'var(--text2)',whiteSpace:'nowrap'}}, p.a.date),
-          React.createElement('span', {style:{flex:1,minWidth:'140px'}}, p.a.account+' ↔ '+p.b.account),
+          React.createElement('span', {style:{flex:1,minWidth:'140px',display:'inline-flex',alignItems:'center',gap:'.35em'}}, p.a.account, React.createElement(Icon,{name:'arrows-h',size:11}), p.b.account),
           React.createElement('span', {style:{fontWeight:700,color:'var(--blue)',whiteSpace:'nowrap'}}, fmt(Math.abs(p.a.amount)))
         )),
         transferPairs.length > 40 && React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',padding:'.25rem .5rem'}}, '... and '+(transferPairs.length-40)+' more')
@@ -923,6 +927,7 @@ function ReconciliationAudit({ txns, rec }) {
 // Budget Tab
 // ═══════════════════════════════════════════════════════════════
 const CAT_PALETTE = ['#22c55e','#f97316','#60a5fa','#a78bfa','#f472b6','#06b6d4','#eab308','#34d399','#facc15','#818cf8','#22d3ee','#f87171','#fb923c','#4ade80','#e879f9','#94a3b8'];
+const CUSTOM_ICON_CHOICES = ['tag','shopping-bag','shopping-cart','utensils','fuel','lightbulb','home','shield','graduation-cap','pill','gamepad','laptop','smartphone','car','baby','award','sparkles','dollar-sign','credit-card'];
 
 function BudgetTab({ txns, rec, budgets, onUpdate }) {
   const { allCats, allExpenseCats, addCategory, removeCategory, T } = useTxn();
@@ -932,7 +937,7 @@ function BudgetTab({ txns, rec, budgets, onUpdate }) {
   const [showManage, setShowManage] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(CAT_PALETTE[0]);
-  const [newIcon, setNewIcon] = useState('💸');
+  const [newIcon, setNewIcon] = useState(CUSTOM_ICON_CHOICES[0]);
 
   function submitNew() {
     const name = newName.trim();
@@ -946,7 +951,7 @@ function BudgetTab({ txns, rec, budgets, onUpdate }) {
 
   const manageSection = React.createElement('div', {style:{marginBottom:'1.5rem',padding:'1rem',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)'}},
     React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom: showManage ? '.75rem' : 0}},
-      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--text)'}}, '🏷️ Custom Categories'),
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--text)'}}, React.createElement(IconLabel,{icon:'tag'},'Custom Categories')),
       React.createElement('button', {
         onClick:()=>setShowManage(v=>!v),
         style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.25rem .6rem',borderRadius:'var(--radius-sm)'}
@@ -955,18 +960,20 @@ function BudgetTab({ txns, rec, budgets, onUpdate }) {
     showManage && React.createElement('div', null,
       customCats.length > 0 && React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.4rem',marginBottom:'.75rem'}},
         ...customCats.map(c => React.createElement('div', {key:c.name,style:{display:'flex',alignItems:'center',gap:'.4rem',padding:'.25rem .6rem',borderRadius:'1rem',background:c.color+'22',border:'1px solid '+c.color+'55'}},
-          React.createElement('span', {style:{fontSize:'var(--t-sm)'}}, c.icon),
+          React.createElement(Icon, {name:c.icon, size:14, style:{color:c.color}}),
           React.createElement('span', {style:{fontSize:'var(--t-xs)',fontWeight:600,color:c.color}}, c.name),
-          React.createElement('button', {onClick:()=>removeCategory(c.name),style:{background:'none',border:'none',cursor:'pointer',color:c.color,fontSize:'var(--t-xs)',padding:'0 .15rem',lineHeight:1,opacity:.7}}, '✕')
+          React.createElement('button', {onClick:()=>removeCategory(c.name),style:{background:'none',border:'none',cursor:'pointer',color:c.color,padding:'0 .15rem',lineHeight:1,opacity:.7}}, React.createElement(Icon,{name:'x',size:12}))
         ))
       ),
       React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.5rem',alignItems:'flex-end'}},
         React.createElement('input', {type:'text',className:'input-field',placeholder:'Category name',value:newName,onChange:e=>setNewName(e.target.value),onKeyDown:e=>e.key==='Enter'&&submitNew(),style:{flex:'1 1 130px',minWidth:'110px'}}),
-        React.createElement('input', {type:'text',className:'input-field',placeholder:'Icon',value:newIcon,onChange:e=>setNewIcon(e.target.value),style:{width:'60px',textAlign:'center'}}),
+        React.createElement('select', {className:'input-field',value:newIcon,onChange:e=>setNewIcon(e.target.value),style:{width:'100px'}},
+          ...CUSTOM_ICON_CHOICES.map(ic => React.createElement('option',{key:ic,value:ic},ic))
+        ),
         React.createElement('div', {style:{display:'flex',flexWrap:'wrap',gap:'.25rem',maxWidth:'200px'}},
           ...CAT_PALETTE.map(col => React.createElement('button', {key:col,onClick:()=>setNewColor(col),style:{width:'20px',height:'20px',borderRadius:'50%',background:col,border:newColor===col?'2px solid #fff':'2px solid transparent',cursor:'pointer',padding:0}}))
         ),
-        React.createElement('button', {onClick:submitNew,style:{background:'var(--gold)',color:'#0b0e14',border:'none',padding:'.4rem .8rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',whiteSpace:'nowrap'}}, '+ Add')
+        React.createElement('button', {onClick:submitNew,style:{background:'var(--gold)',color:'#0b0e14',border:'none',padding:'.4rem .8rem',borderRadius:'var(--radius-sm)',cursor:'pointer',fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:'var(--t-xs)',whiteSpace:'nowrap'}}, React.createElement(IconLabel,{icon:'plus'},'Add'))
       )
     )
   );
@@ -976,11 +983,11 @@ function BudgetTab({ txns, rec, budgets, onUpdate }) {
     React.createElement('p', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginBottom:'1.25rem'}}, 'Set monthly budget targets per category. Reconciled internal transfers excluded.'),
     React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(min(210px,100%),1fr))',gap:'.75rem'}},
       ...allExpenseCats.map(cat => {
-        const c=allCats[cat]||{color:'#94a3b8',icon:'•'}; const spent=catAmt[cat]||0; const budget=budgets[cat]||0;
+        const c=allCats[cat]||{color:'#94a3b8',icon:'tag'}; const spent=catAmt[cat]||0; const budget=budgets[cat]||0;
         const pct = budget>0 ? Math.min(100,spent/budget*100) : 0; const over = budget>0 && spent>budget;
         return React.createElement('div', {key:cat,style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'.8rem',borderLeft:'3px solid '+c.color}},
           React.createElement('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.4rem'}},
-            React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:c.color,fontFamily:"'Syne',sans-serif"}}, c.icon+' '+cat),
+            React.createElement('div', {style:{fontSize:'var(--t-xs)',fontWeight:700,color:c.color,fontFamily:"'Syne',sans-serif"}}, React.createElement(IconLabel,{icon:c.icon,size:12},cat)),
             React.createElement('div', {style:{fontSize:'var(--t-xs)',color:spent>0?(over?'var(--red)':'var(--green)'):'var(--text3)'}}, spent>0?fmt(spent):'—')
           ),
           React.createElement('div', {style:{position:'relative'}},

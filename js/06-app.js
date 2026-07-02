@@ -1,4 +1,4 @@
-const NAV = [{id:'projection',label:'🇦🇺 Family Plan'},{id:'life',label:'🏠 Life Plan'},{id:'cashflow',label:'💳 Monthly Cash'}];
+const NAV = [{id:'projection',icon:'flag',label:'Family Plan'},{id:'life',icon:'home',label:'Life Plan'},{id:'cashflow',icon:'credit-card',label:'Monthly Cash'}];
 
 const NavCtx = createContext(null);
 const useNav = () => useContext(NavCtx);
@@ -41,12 +41,12 @@ function AppInner() {
           React.createElement('span', {className:'brand-name'}, 'FinancePlan ', React.createElement('span', {className:'brand-year'}, '2028'))
         ),
         React.createElement('nav', {className:'desktop-nav'},
-          ...NAV.map(n => React.createElement('button', {key:n.id, className:'nav-btn'+(page===n.id?' active':''), onClick:()=>setPage(n.id)}, n.label))
+          ...NAV.map(n => React.createElement('button', {key:n.id, className:'nav-btn'+(page===n.id?' active':''), onClick:()=>setPage(n.id)}, React.createElement(IconLabel,{icon:n.icon},n.label)))
         ),
         React.createElement('div', {style:{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}},
           React.createElement(SyncBadge, null),
           React.createElement('button', {className:'theme-toggle', onClick:toggleTheme, title:(theme==='dark'?'Switch to light mode':'Switch to dark mode')},
-            theme === 'dark' ? '☀️' : '🌙'
+            React.createElement(Icon, {name: theme==='dark'?'sun':'moon', size:16})
           ),
           React.createElement('button', {className:'hamburger', onClick:()=>setMenuOpen(o=>!o)},
             React.createElement('span', {className:'ham-line', style:menuOpen?{transform:'translateY(7px) rotate(45deg)'}:{}}),
@@ -59,10 +59,10 @@ function AppInner() {
         )
       ),
       menuOpen && React.createElement('div', {className:'mobile-menu'},
-        ...NAV.map(n => React.createElement('button', {key:n.id, className:'mobile-nav-btn'+(page===n.id?' active':''), onClick:()=>{setPage(n.id);setMenuOpen(false);}}, n.label)),
+        ...NAV.map(n => React.createElement('button', {key:n.id, className:'mobile-nav-btn'+(page===n.id?' active':''), onClick:()=>{setPage(n.id);setMenuOpen(false);}}, React.createElement(IconLabel,{icon:n.icon},n.label))),
         React.createElement('button', {key:'logout', className:'mobile-nav-btn', onClick:()=>{setMenuOpen(false);doLogout();},
           style:{borderTop:'1px solid var(--border)',marginTop:'.25rem',paddingTop:'.75rem',color:'var(--red)'}},
-          '↪ Logout')
+          React.createElement(IconLabel,{icon:'log-out'},'Logout'))
       )
     ),
     React.createElement('main', {className:'main-content'},
