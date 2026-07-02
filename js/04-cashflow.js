@@ -234,6 +234,28 @@ function effectiveKind(t, rec) {
 function isExpenseTxn(t, rec) { return !t.hidden && t.amount < 0 && effectiveKind(t, rec) === 'expense'; }
 function isIncomeTxn(t, rec)  { return !t.hidden && t.amount > 0 && effectiveKind(t, rec) === 'income'; }
 
+// Aggregates real Monthly Cash transactions per 'YYYY-MM', for comparing
+// against Family Plan's projected figures. Shared by the Plan vs Actual tab
+// and the projection-met indicator in Family Plan's Cashflow detail table.
+function useActualByMonth() {
+  const { T } = useTxn();
+  const allTxns = (T && T.transactions) || [];
+  const rec = useMemo(() => reconcileAll(allTxns), [allTxns]);
+  return useMemo(() => {
+    const map = {};
+    allTxns.forEach(t => {
+      const ym = t.date.slice(0,7);
+      if (!map[ym]) map[ym] = {income:0, expense:0, ujIncome:0, salIncome:0};
+      if (isIncomeTxn(t, rec)) {
+        map[ym].income += t.amount;
+        if (txnOwner(t)==='Ujjan') map[ym].ujIncome += t.amount; else map[ym].salIncome += t.amount;
+      }
+      if (isExpenseTxn(t, rec)) map[ym].expense += Math.abs(t.amount);
+    });
+    return map;
+  }, [allTxns, rec]);
+}
+
 // ── Reconciliation engine ──────────────────────────────────────
 function reconcileAll(allTxns) {
   const rec = new Map();

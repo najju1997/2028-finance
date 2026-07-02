@@ -1,8 +1,15 @@
 const NAV = [{id:'projection',label:'🇦🇺 Family Plan'},{id:'life',label:'🏠 Life Plan'},{id:'cashflow',label:'💳 Monthly Cash'}];
 
+const NavCtx = createContext(null);
+const useNav = () => useContext(NavCtx);
+
 function AppInner() {
   const [page,setPage] = useState(() => localStorage.getItem('FP_Main_Page') || 'projection');
   useEffect(() => localStorage.setItem('FP_Main_Page', page), [page]);
+  const goToCashflowMonth = useCallback(ym => {
+    try { localStorage.setItem('FP_CF_JumpMonth', ym); localStorage.setItem('FP_CF_Tab', 'plan'); } catch(e){}
+    setPage('cashflow');
+  }, []);
   const [menuOpen,setMenuOpen] = useState(false);
   const [theme,setTheme] = useState(() => localStorage.getItem('FP_Theme') || 'dark');
   useEffect(() => {
@@ -25,7 +32,8 @@ function AppInner() {
     window.location.reload();
   }
 
-  return React.createElement('div', {className:'app'},
+  return React.createElement(NavCtx.Provider, {value:{goToCashflowMonth}},
+   React.createElement('div', {className:'app'},
     React.createElement('header', {className:'topbar'},
       React.createElement('div', {className:'topbar-inner'},
         React.createElement('div', {className:'brand'},
@@ -62,6 +70,7 @@ function AppInner() {
       page==='life' && React.createElement(LifePlannerConnected, null),
       page==='cashflow' && React.createElement(CashflowTrackerConnected, null)
     )
+   )
   );
 }
 

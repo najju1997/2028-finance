@@ -563,6 +563,12 @@ function CashflowDashboard() {
   useEffect(() => { try { localStorage.setItem('FP_CF_Tab', tab); } catch (e) {}}, [tab]);
   useEffect(() => { try { localStorage.setItem('FP_CF_Owner', owner); } catch (e) {}}, [owner]);
   useEffect(() => { if (selMonth !== 'ALL' && months.length > 0 && !months.includes(selMonth)) setSelMonth(months[0]); }, [months.join(',')]);
+  useEffect(() => {
+    try {
+      const jump = localStorage.getItem('FP_CF_JumpMonth');
+      if (jump) { localStorage.removeItem('FP_CF_JumpMonth'); if (months.includes(jump)) setSelMonth(jump); }
+    } catch (e) {}
+  }, [months.join(',')]);
 
   const scopedAllTxns = useMemo(() => owner==='both' ? allTxns : allTxns.filter(t => txnOwner(t)===(owner==='ujjan'?'Ujjan':'Saloni')), [allTxns, owner]);
   const monthTxns = useMemo(() => selMonth==='ALL' ? scopedAllTxns : scopedAllTxns.filter(t => t.date.slice(0,7) === selMonth), [scopedAllTxns, selMonth]);

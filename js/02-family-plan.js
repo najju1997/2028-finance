@@ -489,6 +489,8 @@ function Summary({rows,nepal}) {
 }
 
 function Cashflow({rows}) {
+  const { goToCashflowMonth } = useNav();
+  const actualByMonth = useActualByMonth();
   return React.createElement('div', null,
     React.createElement('div', {className:'chart-card'},
       React.createElement('div',{className:'chart-title'},'Monthly Net Cashflow'),
@@ -510,29 +512,43 @@ function Cashflow({rows}) {
       React.createElement('div', {className:'table-wrap'},
         React.createElement('table', {className:'data-table'},
           React.createElement('thead', null, React.createElement('tr', null,
-            ...['Month','Your Sal','Wife Sal','Extra','Freelance','Xtra Inc','Interest','Tax Ret','Total In','Living','Car','Childcare','Xtra Exp','One-offs','Total Out','Net','Acct B']
+            ...['Month','Your Sal','Wife Sal','Extra','Freelance','Xtra Inc','Interest','Tax Ret','Total In','Living','Car','Childcare','Xtra Exp','One-offs','Total Out','Net','Met?','Acct B']
               .map(h=>React.createElement('th',{key:h},h))
           )),
           React.createElement('tbody', null,
-            ...rows.map(r => React.createElement('tr', {key:r.ym},
-              React.createElement('td',null,r.label),
-              React.createElement('td',null,fmt(r.yourSal)),
-              React.createElement('td',null,fmt(r.wifeSal)),
-              React.createElement('td',null,r.extra>0?fmt(r.extra):'—'),
-              React.createElement('td',null,fmt(r.freelance)),
-              React.createElement('td',{className:r.extraInc>0?'pos':''},r.extraInc>0?fmt(r.extraInc):'—'),
-              React.createElement('td',null,fmt(r.intA+r.intB)),
-              React.createElement('td',{className:r.taxRet>0?'pos':''},r.taxRet>0?fmt(r.taxRet):'—'),
-              React.createElement('td',{className:'gold-t'},fmt(r.totalInc)),
-              React.createElement('td',null,fmt(r.living)),
-              React.createElement('td',null,r.carRun>0?fmt(r.carRun):'—'),
-              React.createElement('td',null,r.cc>0?fmt(r.cc):'—'),
-              React.createElement('td',{className:r.extraExp>0?'neg':''},r.extraExp>0?fmt(-r.extraExp):'—'),
-              React.createElement('td',{className:r.ooThis>0?'neg':''},r.ooThis>0?fmt(-r.ooThis):'—'),
-              React.createElement('td',{className:'neg'},fmt(-r.totalExp)),
-              React.createElement('td',{className:r.net>=0?'pos':'neg'},fmt(r.net)),
-              React.createElement('td',{className:r.balB>=0?'gold-t':'neg'},fmt(r.balB))
-            ))
+            ...rows.map(r => {
+              const ymStr = String(Math.floor(r.ym/100)) + '-' + String(r.ym%100).padStart(2,'0');
+              const actual = actualByMonth[ymStr];
+              const met = actual ? (actual.income - actual.expense) >= r.net : null;
+              return React.createElement('tr', {key:r.ym},
+                React.createElement('td',null,r.label),
+                React.createElement('td',null,fmt(r.yourSal)),
+                React.createElement('td',null,fmt(r.wifeSal)),
+                React.createElement('td',null,r.extra>0?fmt(r.extra):'—'),
+                React.createElement('td',null,fmt(r.freelance)),
+                React.createElement('td',{className:r.extraInc>0?'pos':''},r.extraInc>0?fmt(r.extraInc):'—'),
+                React.createElement('td',null,fmt(r.intA+r.intB)),
+                React.createElement('td',{className:r.taxRet>0?'pos':''},r.taxRet>0?fmt(r.taxRet):'—'),
+                React.createElement('td',{className:'gold-t'},fmt(r.totalInc)),
+                React.createElement('td',null,fmt(r.living)),
+                React.createElement('td',null,r.carRun>0?fmt(r.carRun):'—'),
+                React.createElement('td',null,r.cc>0?fmt(r.cc):'—'),
+                React.createElement('td',{className:r.extraExp>0?'neg':''},r.extraExp>0?fmt(-r.extraExp):'—'),
+                React.createElement('td',{className:r.ooThis>0?'neg':''},r.ooThis>0?fmt(-r.ooThis):'—'),
+                React.createElement('td',{className:'neg'},fmt(-r.totalExp)),
+                React.createElement('td',{className:r.net>=0?'pos':'neg'},fmt(r.net)),
+                React.createElement('td',{style:{textAlign:'center'}},
+                  met===null
+                    ? React.createElement('span',{title:'No Monthly Cash data yet for this month',style:{color:'var(--text3)'}},'—')
+                    : React.createElement('button', {
+                        onClick:()=>goToCashflowMonth(ymStr),
+                        title:'View detail in Monthly Cash',
+                        style:{background:'none',border:'none',cursor:'pointer',fontSize:'1.05em',padding:'.1rem .3rem',color:met?'var(--green)':'var(--red)'}
+                      }, met?'✓':'✗')
+                ),
+                React.createElement('td',{className:r.balB>=0?'gold-t':'neg'},fmt(r.balB))
+              );
+            })
           )
         )
       )
@@ -634,23 +650,7 @@ function NepalPage({nepal}) {
 function ProjectionVsActual() {
   const { compute } = useFinance();
   const rows = useMemo(() => compute(), [compute]);
-  const { T } = useTxn();
-  const allTxns = (T && T.transactions) || [];
-  const rec = useMemo(() => reconcileAll(allTxns), [allTxns]);
-
-  const actualByMonth = useMemo(() => {
-    const map = {};
-    allTxns.forEach(t => {
-      const ym = t.date.slice(0,7);
-      if (!map[ym]) map[ym] = {income:0, expense:0, ujIncome:0, salIncome:0};
-      if (isIncomeTxn(t, rec)) {
-        map[ym].income += t.amount;
-        if (txnOwner(t)==='Ujjan') map[ym].ujIncome += t.amount; else map[ym].salIncome += t.amount;
-      }
-      if (isExpenseTxn(t, rec)) map[ym].expense += Math.abs(t.amount);
-    });
-    return map;
-  }, [allTxns, rec]);
+  const actualByMonth = useActualByMonth();
 
   const merged = useMemo(() => {
     let projCum = 0, actualCum = 0;
