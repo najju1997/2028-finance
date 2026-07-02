@@ -564,7 +564,16 @@ function CashflowDashboard() {
 
   const monthTxns = useMemo(() => allTxns.filter(t => t.date.slice(0,7) === selMonth), [allTxns, selMonth]);
   const monthLabel = selMonth ? new Date(selMonth+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'}) : '';
+  const [showDelMenu, setShowDelMenu] = useState(false);
+  const monthAccounts = useMemo(() => [...new Set(monthTxns.map(t => t.account))].sort(), [monthTxns]);
   if (!months.length) return null;
+
+  function doDeleteMonth(account) {
+    setShowDelMenu(false);
+    const count = account ? monthTxns.filter(t => t.account === account).length : monthTxns.length;
+    const scope = account ? '"'+account+'" transactions' : 'transactions';
+    if (confirm('Delete '+count+' '+monthLabel+' '+scope+'? Cannot be undone.')) deleteMonth(selMonth, account);
+  }
 
   function drillCategory(cat) {
     setFilterCat(cat);
@@ -583,7 +592,13 @@ function CashflowDashboard() {
         : React.createElement('select', {className:'input-field',style:{flex:'0 1 auto',width:'auto',minWidth:'180px',padding:'.35rem .55rem'},value:selMonth,onChange:e=>setSelMonth(e.target.value)},
             ...months.map(m => React.createElement('option', {key:m,value:m}, fmtMonth(m)+' ('+allTxns.filter(t=>t.date.slice(0,7)===m).length+' txns)'))
           ),
-      React.createElement('button', {onClick:()=>{if(confirm('Delete all '+monthLabel+' transactions?')) deleteMonth(selMonth);},style:{marginLeft:'auto',background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)',whiteSpace:'nowrap'}}, '🗑️ Delete month')
+      React.createElement('div', {style:{marginLeft:'auto',position:'relative'}},
+        React.createElement('button', {onClick:()=>setShowDelMenu(v=>!v),style:{background:'none',border:'1px solid var(--border)',color:'var(--text3)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.3rem .6rem',borderRadius:'var(--radius-sm)',whiteSpace:'nowrap'}}, '🗑️ Delete month'),
+        showDelMenu && React.createElement('div', {style:{position:'absolute',top:'100%',right:0,marginTop:'.25rem',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',boxShadow:'0 6px 16px rgba(0,0,0,.2)',zIndex:20,minWidth:'200px',overflow:'hidden'}},
+          React.createElement('button', {onClick:()=>doDeleteMonth(null),style:{display:'block',width:'100%',textAlign:'left',background:'none',border:'none',borderBottom:'1px solid var(--border)',color:'var(--text)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.5rem .75rem',fontWeight:600}}, 'All accounts ('+monthTxns.length+')'),
+          ...monthAccounts.map(a => React.createElement('button', {key:a,onClick:()=>doDeleteMonth(a),style:{display:'block',width:'100%',textAlign:'left',background:'none',border:'none',color:'var(--text2)',cursor:'pointer',fontSize:'var(--t-xs)',padding:'.5rem .75rem'}}, a+' ('+monthTxns.filter(t=>t.account===a).length+')'))
+        )
+      )
     ),
     React.createElement(CfSummaryCards, {txns:monthTxns, rec}),
     React.createElement('nav', {className:'subnav'},

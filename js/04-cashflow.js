@@ -333,8 +333,8 @@ function TxnProvider({ children }) {
   const updateBudget = useCallback((cat, amt) => {
     setT(prev => ({ ...prev, budgets: { ...prev.budgets, [cat]:amt } }));
   }, []);
-  const deleteMonth = useCallback(ym => {
-    setT(prev => ({ ...prev, transactions: (prev.transactions||[]).filter(t => t.date.slice(0,7)!==ym) }));
+  const deleteMonth = useCallback((ym, account) => {
+    setT(prev => ({ ...prev, transactions: (prev.transactions||[]).filter(t => !(t.date.slice(0,7)===ym && (!account || t.account===account))) }));
   }, []);
   const clearAll = useCallback(() => setT({ transactions:[], budgets:{} }), []);
   const dismissRecurring = useCallback(merchant => {
