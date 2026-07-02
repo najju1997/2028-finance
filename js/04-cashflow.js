@@ -45,17 +45,28 @@ const AUTO_RULES = [
   {k:['NIB HEALTH','MEDIBANK','BUPA ','AAMI ','ALLIANZ','BUDGET DIRECT','NRMA','SUNCORP','YOUI ','REAL INSURANCE','HCF ','AHM HEALTH','FRANK HEALTH','GIO ','QBE ','INSURANCE','LIFE INS','HEALTH INS','CAR INS'], cat:'Insurance'},
   {k:['TAFE','CHILDCARE','DAY CARE','DAYCARE','KINDY','KINDERGARTEN','SCHOOL FEE','TUITION','COURSE','COLLEGE','UNIVERSITY','EDUCATION','PRIMARY SCHOOL','HIGH SCHOOL','GOODSTART','TG EARLY LEARNING'], cat:'Education'},
   {k:['WOOLWORTHS','WW METRO','WW ','COLES ','ALDI STORES','ALDI ','IGA ','COSTCO','MOONLIGHT BAZAAR','MOONLIGHT BUTCHERY','MOONLIGHT GROCERY','SAJILO NEPALESE','SAJILO ','LEKALI MEATS','ABRAHIM AL TAEI','HARRIS FARM','FOODWORKS','FRUIT MARKET','BUTCHERY','GROCER','WESTMEAD CONVENIENCE'], cat:'Groceries'},
-  {k:['KFC ','MCDONALD','HUNGRY JACK','HJS ','HJ\'S ','HJS GRANVILLE','HJS NORTHMEAD','HJS WENTWORTHVILLE','NANDO','SUBWAY ','DOMINO','PIZZA','BAKERY','CAFE ','COFFEE ','RESTAURANT','UBER EATS','MENULOG','DOORDASH','CHATIME','GONG CHA','GUZMAN','RED ROOSTER','CHICKEN ','OPORTO','HJs ','MCDONALDS','BARBER','ZLR*WESTMEAD'], cat:'Eating Out'},
-  {k:['APEX VILLAWOOD','SPEEDWAY','CALTEX','SHELL ','7-ELEVEN','7ELEVEN','AMPOL','LIBERTY ','PETROL','BP ','METRO PETROL','PUMA ENERGY','UBER TRIP','UBER *','OPAL ','TRANSPORTFORNSW','SIXT ','BUDGET RENT','HERTZ','TRANSURBAN','LINKT','REGO ','PARKING ','TOLL ','SERVICE NSW'], cat:'Transport/Fuel'},
+  {k:['KFC ','MCDONALD','HUNGRY JACK','HJS ','HJ\'S ','HJS GRANVILLE','HJS NORTHMEAD','HJS WENTWORTHVILLE','NANDO','SUBWAY ','DOMINO','PIZZA','BAKERY','CAFE ','COFFEE ','RESTAURANT','UBER EATS','MENULOG','DOORDASH','CHATIME','GONG CHA','GUZMAN','RED ROOSTER','CHICKEN ','OPORTO','HJs ','MCDONALDS','BARBER','ZLR*WESTMEAD','SUSHI','VENDING'], cat:'Eating Out'},
+  {k:['APEX VILLAWOOD','SPEEDWAY','CALTEX','SHELL ','7-ELEVEN','7ELEVEN','AMPOL','LIBERTY ','PETROL','BP ','METRO PETROL','PUMA ENERGY','UBER TRIP','UBER *','OPAL ','TRANSPORTFORNSW','SIXT ','BUDGET RENT','HERTZ','TRANSURBAN','LINKT','REGO ','PARKING ','TOLL ','SERVICE NSW','SNSW ','DIDI'], cat:'Transport/Fuel'},
   {k:['DODO ','DODO SERVICE','DODO POWER','AGL ','ORIGIN ENERGY','SYDNEY WATER','AUSGRID','OPTUS ','TELSTRA','VODAFONE','IINET','TPG ','NBN ','ENERGY AUST','RED ENERGY','ENGIE ','ALINTA ','SUMO ','POWERSHOP','SIMPLY ENERGY','LYCAMOBILE','BELONG ','AMAYSIM','BOOST MOBILE','KOGAN MOBILE'], cat:'Utilities'},
   {k:['DEFT PAYMENTS','DEFT PAYMENT','RENT PAYMENT','REA GROUP','REALESTATE.COM','BODY CORP','STRATA '], cat:'Rent/Housing'},
-  {k:['KMART ','TARGET ','BIG W','MYER ','DAVID JONES','COTTON ON','AMAZON','EBAY ','BEST & LESS','BUNNINGS','OFFICEWORKS','JB HI-FI','HARVEY NORMAN','THE GOOD GUYS','IKEA ','SUPERCHEAP','TEMU','SHEIN '], cat:'Shopping'},
-  {k:['PHARMACY','CHEMIST','MEDICAL CENTRE','DOCTOR ','DENTAL','HOSPITAL','MEDICARE','CHEMIST WAREHOUSE','PRICELINE','TERRY WHITE','SONIC HEALTH','PATHOLOGY','OPTOMETRIST','OPSM','SPECSAVERS'], cat:'Healthcare'},
-  {k:['NETFLIX','SPOTIFY','STAN ','DISNEY','YOUTUBE','STEAM ','HOYTS','EVENT CINEMA','VILLAGE CINEMA','AMAZON PRIME','APPLE.COM/BILL','APPLE PAY','PLAYSTATION','XBOX ','NINTENDO','TWITCH','GAME '], cat:'Entertainment'},
-  {k:['DIGITALOCEAN','CLOUDFLARE','AWS ','GOOGLE CLOUD','AZURE ','GITHUB ','VERCEL','LINODE','NAMECHEAP','GODADDY','OPENAI','ANTHROPIC','CURSOR.AI','HEROKU','NETLIFY','SUPABASE'], cat:'Tech'},
+  {k:['KMART ','TARGET ','BIG W','MYER ','DAVID JONES','COTTON ON','AMAZON','EBAY ','BEST & LESS','BUNNINGS','OFFICEWORKS','JB HI-FI','HARVEY NORMAN','THE GOOD GUYS','IKEA ','SUPERCHEAP','TEMU','SHEIN ','VALLEYGIRL','SEPHORA','MECCA BRANDS','SHOES'], cat:'Shopping'},
+  {k:['PHARMACY','CHEMIST','MEDICAL CENTRE','DOCTOR ','DENTAL','HOSPITAL','HOSP ','MEDICARE','CHEMIST WAREHOUSE','PRICELINE','PLINE ','TERRY WHITE','SONIC HEALTH','PATHOLOGY','OPTOMETRIST','OPSM','SPECSAVERS'], cat:'Healthcare'},
+  {k:['NETFLIX','SPOTIFY','STAN ','DISNEY','YOUTUBE','STEAM ','HOYTS','EVENT CINEMA','VILLAGE CINEMA','AMAZON PRIME','AMZNPRIME','APPLE.COM/BILL','APPLE PAY','PLAYSTATION','XBOX ','NINTENDO','TWITCH','GAME '], cat:'Entertainment'},
+  {k:['DIGITALOCEAN','CLOUDFLARE','AWS ','GOOGLE CLOUD','AZURE ','GITHUB ','VERCEL','LINODE','NAMECHEAP','GODADDY','OPENAI','ANTHROPIC','CURSOR.AI','HEROKU','NETLIFY','SUPABASE','QUILLBOT'], cat:'Tech'},
 ];
 
-function autoCategory(desc) {
+// Strips reference numbers/dates/country codes so repeat charges from the
+// same merchant collapse to a stable key, regardless of the exact narrative.
+const DESC_PREFIX_RE = /^(DEBIT CARD PURCHASE|DEBIT CARD REFUND|EFTPOS DEBIT|WITHDRAWAL[- ]OSKO PAYMENT|WITHDRAWAL MOBILE|WITHDRAWAL ONLINE|WITHDRAWAL|DEPOSIT[- ]OSKO PAYMENT|DEPOSIT ONLINE|DEPOSIT[- ]SALARY|DEPOSIT)\s*/;
+function merchantKey(desc) {
+  let d = (desc || '').toUpperCase().replace(DESC_PREFIX_RE, '');
+  d = d.replace(/\d+/g, ' ').replace(/[^A-Z& ]/g, ' ').replace(/\b(AUS|AU|USA)\b/g, ' ');
+  d = d.replace(/\s+/g, ' ').trim();
+  return d.split(' ').filter(Boolean).slice(0, 2).join(' ');
+}
+
+function autoCategory(desc, learned) {
+  if (learned) { const hit = learned[merchantKey(desc)]; if (hit) return hit; }
   const d = (desc || '').toUpperCase();
   for (const rule of AUTO_RULES) {
     if (rule.k.some(k => d.includes(k.toUpperCase().trim()))) return rule.cat;
@@ -322,11 +333,31 @@ function TxnProvider({ children }) {
     setT(prev => ({ ...prev, transactions: [...(prev.transactions||[]), { ...txn, id:'m_'+uid(), manual:true }] }));
   }, []);
   const updateCategory = useCallback((id, cat) => {
-    setT(prev => ({ ...prev, transactions: (prev.transactions||[]).map(t => t.id===id?{...t,category:cat,manual:true}:t) }));
+    setT(prev => {
+      const txns = prev.transactions || [];
+      const txn = txns.find(t => t.id === id);
+      if (!txn) return prev;
+      const key = merchantKey(txn.description);
+      return {
+        ...prev,
+        learnedCats: { ...(prev.learnedCats||{}), [key]: cat },
+        transactions: txns.map(t => merchantKey(t.description)===key ? {...t,category:cat,manual:true} : t)
+      };
+    });
   }, []);
   const bulkUpdateCategory = useCallback((ids, cat) => {
     const s = new Set(ids);
-    setT(prev => ({ ...prev, transactions: (prev.transactions||[]).map(t => s.has(t.id)?{...t,category:cat,manual:true}:t) }));
+    setT(prev => {
+      const txns = prev.transactions || [];
+      const keys = new Set(txns.filter(t => s.has(t.id)).map(t => merchantKey(t.description)));
+      const learned = { ...(prev.learnedCats||{}) };
+      keys.forEach(k => { learned[k] = cat; });
+      return {
+        ...prev,
+        learnedCats: learned,
+        transactions: txns.map(t => keys.has(merchantKey(t.description)) ? {...t,category:cat,manual:true} : t)
+      };
+    });
   }, []);
   const bulkSetHidden = useCallback((ids, hidden) => {
     const s = new Set(ids);
@@ -386,7 +417,7 @@ function UploadZone({ onDone }) {
         amount: r.amount,
         description: r.description,
         account: r.account || acctFromFile,
-        category: r.preCat || autoCategory(r.description),
+        category: r.preCat || autoCategory(r.description, T.learnedCats),
         hidden: isAutoHide(r.description),
         manual: false,
         bank,
