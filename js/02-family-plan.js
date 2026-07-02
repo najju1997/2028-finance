@@ -512,14 +512,23 @@ function Cashflow({rows}) {
       React.createElement('div', {className:'table-wrap'},
         React.createElement('table', {className:'data-table'},
           React.createElement('thead', null, React.createElement('tr', null,
-            ...['Month','Your Sal','Wife Sal','Extra','Freelance','Xtra Inc','Interest','Tax Ret','Total In','Living','Car','Childcare','Xtra Exp','One-offs','Total Out','Net','Met?','Acct B']
-              .map(h=>React.createElement('th',{key:h},h))
+            ...[
+              {h:'Month'},{h:'Your Sal'},{h:'Wife Sal'},{h:'Extra'},{h:'Freelance'},{h:'Xtra Inc'},{h:'Interest'},{h:'Tax Ret'},{h:'Total In'},
+              {h:'Living'},{h:'Car'},{h:'Childcare'},{h:'Xtra Exp'},{h:'One-offs'},{h:'Total Out'},
+              {h:'Net', info:'Projected net cashflow for the month (Total In minus Total Out), based on your assumptions.'},
+              {h:'Net Real', info:'Actual net cashflow for the month, from Monthly Cash: real income minus real expenses (reconciled internal transfers excluded). Shows "—" if you haven\'t imported Monthly Cash data for this month yet.'},
+              {h:'Met?', info:'Green check if Net Real met or beat the projected Net; red cross if it fell short. "—" means no Monthly Cash data yet, so nothing to compare. Click the icon to jump to that month in Monthly Cash.'},
+              {h:'Acct B'}
+            ].map(({h,info}) => React.createElement('th',{key:h}, h,
+              info && React.createElement('span',{title:info,style:{marginLeft:'.3rem',cursor:'help',color:'var(--text3)',fontWeight:400,textTransform:'none',letterSpacing:'normal'}},'ⓘ')
+            ))
           )),
           React.createElement('tbody', null,
             ...rows.map(r => {
               const ymStr = String(Math.floor(r.ym/100)) + '-' + String(r.ym%100).padStart(2,'0');
               const actual = actualByMonth[ymStr];
-              const met = actual ? (actual.income - actual.expense) >= r.net : null;
+              const netReal = actual ? actual.income - actual.expense : null;
+              const met = netReal===null ? null : netReal >= r.net;
               return React.createElement('tr', {key:r.ym},
                 React.createElement('td',null,r.label),
                 React.createElement('td',null,fmt(r.yourSal)),
@@ -537,6 +546,7 @@ function Cashflow({rows}) {
                 React.createElement('td',{className:r.ooThis>0?'neg':''},r.ooThis>0?fmt(-r.ooThis):'—'),
                 React.createElement('td',{className:'neg'},fmt(-r.totalExp)),
                 React.createElement('td',{className:r.net>=0?'pos':'neg'},fmt(r.net)),
+                React.createElement('td',{className:netReal===null?'':(netReal>=0?'pos':'neg')}, netReal===null?'—':fmt(netReal)),
                 React.createElement('td',{style:{textAlign:'center'}},
                   met===null
                     ? React.createElement('span',{title:'No Monthly Cash data yet for this month',style:{color:'var(--text3)'}},'—')
