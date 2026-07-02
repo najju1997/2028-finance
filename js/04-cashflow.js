@@ -40,7 +40,7 @@ const EXPENSE_CATS = Object.keys(CATS).filter(c => CATS[c].kind === 'expense');
 
 const AUTO_RULES = [
   {k:['SALARY ','LUXOTTICA RETAIL','ESSILOR AUSTRAL','PAYROLL','WAGES ','DIRECT CREDIT','INTEREST PAID','BONUS '], cat:'Income'},
-  {k:['TRANSFER TO','TRANSFER FROM','FAST TRANSFER FROM','FAST TRANSFER TO','TO U PRAJAPATI','TO UJJAN','FROM SALONI','FROM SHRAMIKA','FROM PRAJAPATI','TO SALONI','BPAY BILLER REFUND','OSKO PAYMENT','PAYID ','TFR WESTPAC'], cat:'Transfers'},
+  {k:['TRANSFER TO','TRANSFER FROM','FAST TRANSFER FROM','FAST TRANSFER TO','TO U PRAJAPATI','TO UJJAN','FROM SALONI','FROM SHRAMIKA','FROM PRAJAPATI','TO SALONI','UJJAN PRAJAPATI','BPAY BILLER REFUND','TFR WESTPAC'], cat:'Transfers'},
   {k:['STEPPAY REPAYMENT','STEPPAY PYMT','AFTERPAY ','AFTERPAY.','ZIP PAY','KLARNA','HUMM ','LATITUDE PAY','BRIGHTE'], cat:'BNPL/StepPay'},
   {k:['NIB HEALTH','MEDIBANK','BUPA ','AAMI ','ALLIANZ','BUDGET DIRECT','NRMA','SUNCORP','YOUI ','REAL INSURANCE','HCF ','AHM HEALTH','FRANK HEALTH','GIO ','QBE ','INSURANCE','LIFE INS','HEALTH INS','CAR INS'], cat:'Insurance'},
   {k:['TAFE','CHILDCARE','DAY CARE','DAYCARE','KINDY','KINDERGARTEN','SCHOOL FEE','TUITION','COURSE','COLLEGE','UNIVERSITY','EDUCATION','PRIMARY SCHOOL','HIGH SCHOOL','GOODSTART','TG EARLY LEARNING'], cat:'Education'},
@@ -65,13 +65,16 @@ function merchantKey(desc) {
   return d.split(' ').filter(Boolean).slice(0, 2).join(' ');
 }
 
-function autoCategory(desc, learned) {
+function autoCategory(desc, learned, amount) {
   if (learned) { const hit = learned[merchantKey(desc)]; if (hit) return hit; }
   const d = (desc || '').toUpperCase();
   for (const rule of AUTO_RULES) {
     if (rule.k.some(k => d.includes(k.toUpperCase().trim()))) return rule.cat;
   }
-  return 'Other';
+  // Unmatched credit with no other signal is real money received (e.g. a
+  // client payment) - default to Income rather than the expense-flavoured
+  // "Other" bucket, which would otherwise hide it from both totals.
+  return amount > 0 ? 'Income' : 'Other';
 }
 
 function hashTxn(date, amount, desc) {
@@ -417,7 +420,7 @@ function UploadZone({ onDone }) {
         amount: r.amount,
         description: r.description,
         account: r.account || acctFromFile,
-        category: r.preCat || autoCategory(r.description, T.learnedCats),
+        category: r.preCat || autoCategory(r.description, T.learnedCats, r.amount),
         hidden: isAutoHide(r.description),
         manual: false,
         bank,
