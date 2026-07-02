@@ -157,6 +157,7 @@ function parseWestpacCSV(text) {
   const iDebit = col('debit amount') >= 0 ? col('debit amount') : col('debit');
   const iCredit = col('credit amount') >= 0 ? col('credit amount') : col('credit');
   const iBal = col('balance');
+  const iAcct = col('bank account');
   const rows = [];
   for (let li = 1; li < lines.length; li++) {
     const parts = splitCsvLine(lines[li]);
@@ -167,7 +168,7 @@ function parseWestpacCSV(text) {
     const credit = parseFloat(String(parts[iCredit]||'').replace(/[^0-9.]/g,''))||0;
     if (!debit && !credit) continue;
     const amount = credit - debit;
-    rows.push({ date, amount, description:(parts[iNarr]||'').trim(), balance:(parts[iBal]||'').trim() });
+    rows.push({ date, amount, description:(parts[iNarr]||'').trim(), balance:(parts[iBal]||'').trim(), acctNum:(parts[iAcct]||'').trim() });
   }
   return rows;
 }
@@ -180,7 +181,13 @@ function detectAccount(rows, bank) {
     const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
     return top ? top[0] : 'Macquarie';
   }
-  if (bank === 'westpac') return 'Saloni';
+  if (bank === 'westpac') {
+    const counts = {};
+    rows.forEach(r => { if (r.acctNum) counts[r.acctNum] = (counts[r.acctNum]||0)+1; });
+    const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+    const num = top ? top[0] : '';
+    return num ? `Saloni •${num.slice(-4)}` : 'Saloni';
+  }
   const joined = rows.map(r => r.description || '').join('\n').toUpperCase();
   if (joined.includes('DEFT PAYMENT')) return 'Rent Account';
   if (joined.includes('LUXOTTICA') || joined.includes('ESSILOR')) return 'Salary Account';
