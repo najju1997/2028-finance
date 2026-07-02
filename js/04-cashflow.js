@@ -180,6 +180,7 @@ function detectAccount(rows, bank) {
     const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
     return top ? top[0] : 'Macquarie';
   }
+  if (bank === 'westpac') return 'Saloni';
   const joined = rows.map(r => r.description || '').join('\n').toUpperCase();
   if (joined.includes('DEFT PAYMENT')) return 'Rent Account';
   if (joined.includes('LUXOTTICA') || joined.includes('ESSILOR')) return 'Salary Account';
