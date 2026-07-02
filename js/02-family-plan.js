@@ -44,6 +44,7 @@ function FinanceProvider({children}) {
 
   const update = useCallback((sec, key, val) => setA(p => ({...p, [sec]:{...p[sec], [key]:val}})), []);
   const WPM = 365.25/12/7;
+  const actualByMonth = useActualByMonth();
 
   const fetchRate = useCallback(async () => {
     update('nepal','exchangeLoading',true);
@@ -110,15 +111,22 @@ function FinanceProvider({children}) {
       const ooThis = oo[ym] || 0;
       const totalExp = living+carRun+cc+extraExp+ooThis;
       const netB = totalInc - totalExp - intA; // Account B net flow (intA stays in A)
+      const ymStr = String(y)+'-'+String(m).padStart(2,'0');
+      const actual = actualByMonth[ymStr];
+      const netReal = actual ? actual.income - actual.expense : null;
+      // Once a month has real Monthly Cash data, the running balance carries
+      // forward what actually happened instead of the pure projection, so
+      // every later month (and the final wealth total) reflects reality
+      // where it's known, rather than assuming the plan was hit exactly.
       balA += intA;
-      balB += netB;
+      balB += (netReal !== null ? netReal : netB);
       rows.push({ym, label:ML[m-1]+'-'+String(y).slice(2), yourSal, wifeSal, extra, freelance, extraInc,
         intA, intB, taxRet, totalInc, living, carRun, cc, extraExp, ooThis, totalExp,
-        net: netB+intA, balA, balB, total: balA+balB});
+        net: netB+intA, netReal, balA, balB, total: balA+balB});
       m++; if(m>12){ m=1; y++; }
     }
     return rows;
-  }, [A]);
+  }, [A, actualByMonth]);
 
   const nepalCalc = useCallback(() => {
     const {nepal} = A;
@@ -490,7 +498,6 @@ function Summary({rows,nepal}) {
 
 function Cashflow({rows}) {
   const { goToCashflowMonth } = useNav();
-  const actualByMonth = useActualByMonth();
   return React.createElement('div', null,
     React.createElement('div', {className:'chart-card'},
       React.createElement('div',{className:'chart-title'},'Monthly Net Cashflow'),
@@ -526,8 +533,7 @@ function Cashflow({rows}) {
           React.createElement('tbody', null,
             ...rows.map(r => {
               const ymStr = String(Math.floor(r.ym/100)) + '-' + String(r.ym%100).padStart(2,'0');
-              const actual = actualByMonth[ymStr];
-              const netReal = actual ? actual.income - actual.expense : null;
+              const netReal = r.netReal;
               const met = netReal===null ? null : netReal >= r.net;
               return React.createElement('tr', {key:r.ym},
                 React.createElement('td',null,r.label),
