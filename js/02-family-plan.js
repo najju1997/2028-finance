@@ -14,6 +14,7 @@ const DEFAULTS = {
   nepal:{noInt:40,fixed12:20,mktYou:30,mktWife:10,nrsRate:0.04,exchange:95,exchangeAuto:false,exchangeLoading:false},
   oneoff:{tuit1:9500,tuit2:9500,v485pri:4770,v485sec:2385,v485adm:500,oshc:1200,
     skills:600,english:400,police:200,medicals:600,agent:3000,skills2:300,prPri:4640,prSec:2330,stateNom:300},
+  labels:{},
   extraIncomes:[],extraExpenses:[],extraOneoffs:[]
 };
 
@@ -235,7 +236,7 @@ function Section({icon,title,children,open:init=true}) {
   );
 }
 
-function Field({label,hint,value,onChange,prefix=false,pct=false}) {
+function Field({label,hint,value,onChange,prefix=false,pct=false,onLabelChange}) {
   const [raw,setRaw] = useState('');
   const [focus,setFocus] = useState(false);
   const displayed = focus ? raw : (pct ? (value*100).toFixed(2) : String(value));
@@ -248,7 +249,10 @@ function Field({label,hint,value,onChange,prefix=false,pct=false}) {
     onBlur: () => { const v = parseFloat(raw.replace(/[^0-9.\-]/g,'')); if(!isNaN(v)) onChange(pct?v/100:v); setFocus(false); }
   });
   return React.createElement('div', {className:'input-group'},
-    React.createElement('label', {className:'input-label'}, label),
+    onLabelChange
+      ? React.createElement('input', {type:'text', className:'input-label input-label-edit', value:label,
+          onChange: e => onLabelChange(e.target.value)})
+      : React.createElement('label', {className:'input-label'}, label),
     prefix ? React.createElement('div', {className:'input-wrap'}, React.createElement('span',{className:'input-prefix'},'$'), inp) : inp,
     hint && React.createElement('span', {className:'input-hint'}, hint)
   );
@@ -328,8 +332,10 @@ function DynList({items,onChange,fields,addLabel,newItem}) {
 function Assumptions({onGo}) {
   const {A,update,setA,fetchRate} = useFinance();
   const u = (s,k) => v => update(s,k,v);
-  const {dates,dateLabels,income,savings,expenses,childcare,tax,nepal,oneoff,extraIncomes,extraExpenses,extraOneoffs} = A;
+  const {dates,dateLabels,income,savings,expenses,childcare,tax,nepal,oneoff,extraIncomes,extraExpenses,extraOneoffs,labels} = A;
   const dl = k => v => update('dateLabels',k,v);
+  const L = (k,fallback) => (labels && labels[k]) || fallback;
+  const fl = k => v => update('labels',k,v);
   return React.createElement('div', null,
     React.createElement('h1', {className:'page-title'}, 'Assumptions'),
     React.createElement('p', {className:'page-subtitle'}, 'Edit any value freely. Saved automatically and synced across devices.'),
@@ -352,9 +358,9 @@ function Assumptions({onGo}) {
 
     React.createElement(Section, {icon:'dollar-sign', title:'Your Salary'},
       G(
-        React.createElement(Field, {label:'Salary at Age 31', value:income.yourSalLow, onChange:u('income','yourSalLow'), prefix:true}),
-        React.createElement(Field, {label:'Salary at Age 32', value:income.yourSalHigh, onChange:u('income','yourSalHigh'), prefix:true}),
-        React.createElement(Field, {label:'Your Extra Income /wk', value:income.extraYou, onChange:u('income','extraYou'), prefix:true}),
+        React.createElement(Field, {label:L('income.yourSalLow','Salary at Age 31'), onLabelChange:fl('income.yourSalLow'), value:income.yourSalLow, onChange:u('income','yourSalLow'), prefix:true}),
+        React.createElement(Field, {label:L('income.yourSalHigh','Salary at Age 32'), onLabelChange:fl('income.yourSalHigh'), value:income.yourSalHigh, onChange:u('income','yourSalHigh'), prefix:true}),
+        React.createElement(Field, {label:L('income.extraYou','Your Extra Income /wk'), onLabelChange:fl('income.extraYou'), value:income.extraYou, onChange:u('income','extraYou'), prefix:true}),
       ),
       SL('ADDITIONAL INCOME STREAMS'),
       React.createElement(DynList, {items:extraIncomes,
@@ -372,25 +378,25 @@ function Assumptions({onGo}) {
 
     React.createElement(Section, {icon:'user', title:'Wife Salary'},
       G(
-        React.createElement(Field, {label:'Wife Salary Ph.1 /wk', value:income.wifeP1, onChange:u('income','wifeP1'), prefix:true}),
-        React.createElement(Field, {label:'Wife Salary Ph.2 /wk', hint:'During masters', value:income.wifeP2, onChange:u('income','wifeP2'), prefix:true}),
-        React.createElement(Field, {label:'Wife Salary Ph.3 /wk', hint:'After PR', value:income.wifeP3, onChange:u('income','wifeP3'), prefix:true}),
-        React.createElement(Field, {label:'Wife Freelance /wk', value:income.freelance, onChange:u('income','freelance'), prefix:true}),
+        React.createElement(Field, {label:L('income.wifeP1','Wife Salary Ph.1 /wk'), onLabelChange:fl('income.wifeP1'), value:income.wifeP1, onChange:u('income','wifeP1'), prefix:true}),
+        React.createElement(Field, {label:L('income.wifeP2','Wife Salary Ph.2 /wk'), onLabelChange:fl('income.wifeP2'), hint:'During masters', value:income.wifeP2, onChange:u('income','wifeP2'), prefix:true}),
+        React.createElement(Field, {label:L('income.wifeP3','Wife Salary Ph.3 /wk'), onLabelChange:fl('income.wifeP3'), hint:'After PR', value:income.wifeP3, onChange:u('income','wifeP3'), prefix:true}),
+        React.createElement(Field, {label:L('income.freelance','Wife Freelance /wk'), onLabelChange:fl('income.freelance'), value:income.freelance, onChange:u('income','freelance'), prefix:true}),
       )
     ),
 
     React.createElement(Section, {icon:'bank', title:'Savings Accounts (AUD)'}, G(
-      React.createElement(Field, {label:'Account A – Term Savings', hint:'Compounds at 4.5%', value:savings.acctA, onChange:u('savings','acctA'), prefix:true}),
-      React.createElement(Field, {label:'Account B – Spending Acct', hint:'All surplus + draws', value:savings.acctB, onChange:u('savings','acctB'), prefix:true}),
-      React.createElement(Field, {label:'Macquarie Rate p.a.', value:savings.macRate, onChange:u('savings','macRate'), pct:true}),
+      React.createElement(Field, {label:L('savings.acctA','Account A – Term Savings'), onLabelChange:fl('savings.acctA'), hint:'Compounds at 4.5%', value:savings.acctA, onChange:u('savings','acctA'), prefix:true}),
+      React.createElement(Field, {label:L('savings.acctB','Account B – Spending Acct'), onLabelChange:fl('savings.acctB'), hint:'All surplus + draws', value:savings.acctB, onChange:u('savings','acctB'), prefix:true}),
+      React.createElement(Field, {label:L('savings.macRate','Macquarie Rate p.a.'), onLabelChange:fl('savings.macRate'), value:savings.macRate, onChange:u('savings','macRate'), pct:true}),
     )),
 
     React.createElement(Section, {icon:'shopping-cart', title:'Living Expenses (weekly, all-in incl. rent)'},
       G(
-        React.createElement(Field, {label:'Weekly Expenses Ph.1', hint:'Rent, food, transport', value:expenses.expWk, onChange:u('expenses','expWk'), prefix:true}),
-        React.createElement(Field, {label:'Weekly Expenses Ph.2', value:expenses.expWkPost, onChange:u('expenses','expWkPost'), prefix:true}),
-        React.createElement(Field, {label:'Car Purchase (one-off)', value:expenses.carCost, onChange:u('expenses','carCost'), prefix:true}),
-        React.createElement(Field, {label:'Car Running /wk', value:expenses.carRun, onChange:u('expenses','carRun'), prefix:true}),
+        React.createElement(Field, {label:L('expenses.expWk','Weekly Expenses Ph.1'), onLabelChange:fl('expenses.expWk'), hint:'Rent, food, transport', value:expenses.expWk, onChange:u('expenses','expWk'), prefix:true}),
+        React.createElement(Field, {label:L('expenses.expWkPost','Weekly Expenses Ph.2'), onLabelChange:fl('expenses.expWkPost'), value:expenses.expWkPost, onChange:u('expenses','expWkPost'), prefix:true}),
+        React.createElement(Field, {label:L('expenses.carCost','Car Purchase (one-off)'), onLabelChange:fl('expenses.carCost'), value:expenses.carCost, onChange:u('expenses','carCost'), prefix:true}),
+        React.createElement(Field, {label:L('expenses.carRun','Car Running /wk'), onLabelChange:fl('expenses.carRun'), value:expenses.carRun, onChange:u('expenses','carRun'), prefix:true}),
       ),
       SL('ADDITIONAL RECURRING EXPENSES'),
       React.createElement(DynList, {items:extraExpenses,
@@ -408,10 +414,10 @@ function Assumptions({onGo}) {
 
     React.createElement(Section, {icon:'baby', title:'Childcare – Uziel'},
       G(
-        React.createElement(Field, {label:'Centre Daily Rate', value:childcare.dailyRate, onChange:u('childcare','dailyRate'), prefix:true}),
-        React.createElement(Field, {label:'ECT Discount %', value:childcare.discount, onChange:u('childcare','discount'), pct:true}),
-        React.createElement(Field, {label:'Govt CCS % (after PR)', value:childcare.ccsRate, onChange:u('childcare','ccsRate'), pct:true}),
-        React.createElement(Field, {label:'Days per Week', value:childcare.days, onChange:u('childcare','days')}),
+        React.createElement(Field, {label:L('childcare.dailyRate','Centre Daily Rate'), onLabelChange:fl('childcare.dailyRate'), value:childcare.dailyRate, onChange:u('childcare','dailyRate'), prefix:true}),
+        React.createElement(Field, {label:L('childcare.discount','ECT Discount %'), onLabelChange:fl('childcare.discount'), value:childcare.discount, onChange:u('childcare','discount'), pct:true}),
+        React.createElement(Field, {label:L('childcare.ccsRate','Govt CCS % (after PR)'), onLabelChange:fl('childcare.ccsRate'), value:childcare.ccsRate, onChange:u('childcare','ccsRate'), pct:true}),
+        React.createElement(Field, {label:L('childcare.days','Days per Week'), onLabelChange:fl('childcare.days'), value:childcare.days, onChange:u('childcare','days')}),
       ),
       React.createElement('div', {className:'info-box', style:{marginTop:'.75rem'}},
         React.createElement('p', null,
@@ -426,22 +432,23 @@ function Assumptions({onGo}) {
         React.createElement('p', null, 'Refund = work deductions × marginal tax rate, applied each July. Stage 3 brackets (16%/30%/37%/45%), LITO and Medicare handled automatically.')
       ),
       G(
-        React.createElement(Field, {label:'Your Work Deductions /yr', hint:'Avg work expenses claimed', value:tax.workDedYou, onChange:u('tax','workDedYou'), prefix:true}),
-        React.createElement(Field, {label:'Wife Work Deductions /yr', value:tax.workDedWife, onChange:u('tax','workDedWife'), prefix:true}),
-        React.createElement(Field, {label:'Bracket Indexation /yr', hint:'0% = no indexation', value:tax.bracketIndex, onChange:u('tax','bracketIndex'), pct:true}),
+        React.createElement(Field, {label:L('tax.workDedYou','Your Work Deductions /yr'), onLabelChange:fl('tax.workDedYou'), hint:'Avg work expenses claimed', value:tax.workDedYou, onChange:u('tax','workDedYou'), prefix:true}),
+        React.createElement(Field, {label:L('tax.workDedWife','Wife Work Deductions /yr'), onLabelChange:fl('tax.workDedWife'), value:tax.workDedWife, onChange:u('tax','workDedWife'), prefix:true}),
+        React.createElement(Field, {label:L('tax.bracketIndex','Bracket Indexation /yr'), onLabelChange:fl('tax.bracketIndex'), hint:'0% = no indexation', value:tax.bracketIndex, onChange:u('tax','bracketIndex'), pct:true}),
       )
     ),
 
     React.createElement(Section, {icon:'mountain', title:'Nepal Savings (NRS)'},
       G(
-        React.createElement(Field, {label:'No Interest (Lakh)', value:nepal.noInt, onChange:u('nepal','noInt')}),
-        React.createElement(Field, {label:'Fixed 12% p.a. (Lakh)', value:nepal.fixed12, onChange:u('nepal','fixed12')}),
-        React.createElement(Field, {label:'Market Rate – You (Lakh)', value:nepal.mktYou, onChange:u('nepal','mktYou')}),
-        React.createElement(Field, {label:'Market Rate – Wife (Lakh)', value:nepal.mktWife, onChange:u('nepal','mktWife')}),
-        React.createElement(Field, {label:'Nepal Rate p.a.', value:nepal.nrsRate, onChange:u('nepal','nrsRate'), pct:true}),
+        React.createElement(Field, {label:L('nepal.noInt','No Interest (Lakh)'), onLabelChange:fl('nepal.noInt'), value:nepal.noInt, onChange:u('nepal','noInt')}),
+        React.createElement(Field, {label:L('nepal.fixed12','Fixed 12% p.a. (Lakh)'), onLabelChange:fl('nepal.fixed12'), value:nepal.fixed12, onChange:u('nepal','fixed12')}),
+        React.createElement(Field, {label:L('nepal.mktYou','Market Rate – You (Lakh)'), onLabelChange:fl('nepal.mktYou'), value:nepal.mktYou, onChange:u('nepal','mktYou')}),
+        React.createElement(Field, {label:L('nepal.mktWife','Market Rate – Wife (Lakh)'), onLabelChange:fl('nepal.mktWife'), value:nepal.mktWife, onChange:u('nepal','mktWife')}),
+        React.createElement(Field, {label:L('nepal.nrsRate','Nepal Rate p.a.'), onLabelChange:fl('nepal.nrsRate'), value:nepal.nrsRate, onChange:u('nepal','nrsRate'), pct:true}),
       ),
       React.createElement('div', {style:{marginTop:'1rem'}},
-        React.createElement('label', {className:'input-label'}, 'AUD / NRS Exchange Rate'),
+        React.createElement('input', {type:'text', className:'input-label input-label-edit', value:L('nepal.exchange','AUD / NRS Exchange Rate'),
+          onChange: e => fl('nepal.exchange')(e.target.value)}),
         React.createElement('div', {style:{display:'flex',gap:'.5rem',alignItems:'center',marginTop:'.3rem',flexWrap:'wrap'}},
           React.createElement('div', {className:'input-wrap', style:{flex:'0 0 140px'}},
             React.createElement('span', {className:'input-prefix'}, '₨'),
@@ -461,27 +468,27 @@ function Assumptions({onGo}) {
         React.createElement('p', null, 'Set to $0 if not applicable.')
       ),
       SL('TUITION'), G(
-        React.createElement(Field, {label:'Masters Sem 1', value:oneoff.tuit1, onChange:u('oneoff','tuit1'), prefix:true}),
-        React.createElement(Field, {label:'Masters Sem 2', value:oneoff.tuit2, onChange:u('oneoff','tuit2'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.tuit1','Masters Sem 1'), onLabelChange:fl('oneoff.tuit1'), value:oneoff.tuit1, onChange:u('oneoff','tuit1'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.tuit2','Masters Sem 2'), onLabelChange:fl('oneoff.tuit2'), value:oneoff.tuit2, onChange:u('oneoff','tuit2'), prefix:true}),
       ),
       SL('485 VISA'), G(
-        React.createElement(Field, {label:'485 – Primary', value:oneoff.v485pri, onChange:u('oneoff','v485pri'), prefix:true}),
-        React.createElement(Field, {label:'485 – Secondary', value:oneoff.v485sec, onChange:u('oneoff','v485sec'), prefix:true}),
-        React.createElement(Field, {label:'Admin / VAC', value:oneoff.v485adm, onChange:u('oneoff','v485adm'), prefix:true}),
-        React.createElement(Field, {label:'OSHC Extension', value:oneoff.oshc, onChange:u('oneoff','oshc'), prefix:true}),
-        React.createElement(Field, {label:'Skills Assessment', value:oneoff.skills, onChange:u('oneoff','skills'), prefix:true}),
-        React.createElement(Field, {label:'English Test', value:oneoff.english, onChange:u('oneoff','english'), prefix:true}),
-        React.createElement(Field, {label:'Police Clearances', value:oneoff.police, onChange:u('oneoff','police'), prefix:true}),
-        React.createElement(Field, {label:'Medicals', value:oneoff.medicals, onChange:u('oneoff','medicals'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.v485pri','485 – Primary'), onLabelChange:fl('oneoff.v485pri'), value:oneoff.v485pri, onChange:u('oneoff','v485pri'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.v485sec','485 – Secondary'), onLabelChange:fl('oneoff.v485sec'), value:oneoff.v485sec, onChange:u('oneoff','v485sec'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.v485adm','Admin / VAC'), onLabelChange:fl('oneoff.v485adm'), value:oneoff.v485adm, onChange:u('oneoff','v485adm'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.oshc','OSHC Extension'), onLabelChange:fl('oneoff.oshc'), value:oneoff.oshc, onChange:u('oneoff','oshc'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.skills','Skills Assessment'), onLabelChange:fl('oneoff.skills'), value:oneoff.skills, onChange:u('oneoff','skills'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.english','English Test'), onLabelChange:fl('oneoff.english'), value:oneoff.english, onChange:u('oneoff','english'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.police','Police Clearances'), onLabelChange:fl('oneoff.police'), value:oneoff.police, onChange:u('oneoff','police'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.medicals','Medicals'), onLabelChange:fl('oneoff.medicals'), value:oneoff.medicals, onChange:u('oneoff','medicals'), prefix:true}),
       ),
       SL('AGENT & MISC'), G(
-        React.createElement(Field, {label:'Migration Agent', value:oneoff.agent, onChange:u('oneoff','agent'), prefix:true}),
-        React.createElement(Field, {label:'Additional Skills', value:oneoff.skills2, onChange:u('oneoff','skills2'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.agent','Migration Agent'), onLabelChange:fl('oneoff.agent'), value:oneoff.agent, onChange:u('oneoff','agent'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.skills2','Additional Skills'), onLabelChange:fl('oneoff.skills2'), value:oneoff.skills2, onChange:u('oneoff','skills2'), prefix:true}),
       ),
       SL('PR APPLICATION'), G(
-        React.createElement(Field, {label:'PR – Primary', value:oneoff.prPri, onChange:u('oneoff','prPri'), prefix:true}),
-        React.createElement(Field, {label:'PR – Secondary', value:oneoff.prSec, onChange:u('oneoff','prSec'), prefix:true}),
-        React.createElement(Field, {label:'State Nomination', value:oneoff.stateNom, onChange:u('oneoff','stateNom'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.prPri','PR – Primary'), onLabelChange:fl('oneoff.prPri'), value:oneoff.prPri, onChange:u('oneoff','prPri'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.prSec','PR – Secondary'), onLabelChange:fl('oneoff.prSec'), value:oneoff.prSec, onChange:u('oneoff','prSec'), prefix:true}),
+        React.createElement(Field, {label:L('oneoff.stateNom','State Nomination'), onLabelChange:fl('oneoff.stateNom'), value:oneoff.stateNom, onChange:u('oneoff','stateNom'), prefix:true}),
       ),
       SL('EXTRA ONE-OFF COSTS'),
       React.createElement(DynList, {items:extraOneoffs,
