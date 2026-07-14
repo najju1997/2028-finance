@@ -1,7 +1,7 @@
 const DEFAULTS = {
-  dates:{yourSalRise:202607,wifeP2:202607,wifeP3:202707,extraEnd:202611,expDrop:202707,
-    childcareStart:202707,ccsStart:202711,lodge485:202707,agentPay:202708,carMonth:202706,
-    prGrant:202711,tuit1:202607,tuit2:202701,tax1:202607,tax2:202707,tax3:202807},
+  dates:{yourSalRise:'2026-07-01',wifeP2:'2026-07-01',wifeP3:'2027-07-01',extraEnd:'2026-11-30',expDrop:'2027-07-01',
+    childcareStart:'2027-07-01',ccsStart:'2027-11-01',lodge485:'2027-07-01',agentPay:'2027-08-01',carMonth:'2026-06-01',
+    prGrant:'2027-11-01',tuit1:'2026-07-01',tuit2:'2027-01-01',tax1:'2026-07-01',tax2:'2027-07-01',tax3:'2028-07-01'},
   income:{yourSalLow:800,yourSalHigh:1323,wifeP1:736,wifeP2:944,wifeP3:1500,extraYou:630,freelance:100},
   savings:{acctA:5500,acctB:11500,macRate:0.045},
   expenses:{expWk:1300,expWkPost:950,carCost:10000,carRun:175},
@@ -13,12 +13,72 @@ const DEFAULTS = {
   extraIncomes:[],extraExpenses:[],extraOneoffs:[]
 };
 
+// ─── Exact-date helpers ──────────────────────────────────────────────────
+// All dates in this file are ISO 'YYYY-MM-DD' strings, which sort/compare
+// correctly with plain string comparison, so no parsing is needed for
+// before/after checks.
+const pad2 = n => String(n).padStart(2,'0');
+const daysInMonth = (y,m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const dateOf = (y,m,d) => y+'-'+pad2(m)+'-'+pad2(d);
+const addDays = (ds, n) => { const d = new Date(ds+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+// tiers: [{from:'YYYY-MM-DD', rate}, ...] ascending by `from`; the first
+// tier's `from` should be '' so it always applies before any real date.
+function tierRate(ds, tiers) { let r = tiers[0].rate; for(const t of tiers){ if(t.from <= ds) r = t.rate; } return r; }
+// Integrates a weekly rate that may change mid-month, day by day, into an
+// exact monthly total (so switching plans mid-month is no longer rounded
+// up/down to the whole month).
+function monthFromTiers(y, m, tiers) {
+  const D = daysInMonth(y,m);
+  let total = 0;
+  for(let d=1; d<=D; d++) total += tierRate(dateOf(y,m,d), tiers)/7;
+  return total;
+}
+// Prorates a date-ranged extra income/expense entry across a calendar
+// month by counting the exact days of overlap.
+function monthOverlapAmount(y, m, fromDate, toDate, amount, weekly) {
+  if(!fromDate || !toDate) return 0;
+  const D = daysInMonth(y,m);
+  let count = 0;
+  for(let d=1; d<=D; d++) { const ds = dateOf(y,m,d); if(ds>=fromDate && ds<=toDate) count++; }
+  if(!count) return 0;
+  return weekly ? amount*(count/7) : amount*(count/D);
+}
+// Migrates legacy YYYYMM-integer dates (month-only precision) to ISO date
+// strings, preserving the exact behaviour of existing saved plans: a
+// plain "start of applicability" date becomes day 1, while the inclusive
+// "extraEnd" cutoff and range "to" dates become the last day of that month.
+function migrateDates(p) {
+  const toDate = (v, day) => typeof v === 'number' ? dateOf(Math.floor(v/100), v%100, day) : v;
+  if(p.dates) {
+    const d = {...p.dates};
+    for(const k in d) if(typeof d[k]==='number') {
+      const day = k==='extraEnd' ? daysInMonth(Math.floor(d[k]/100), d[k]%100) : 1;
+      d[k] = toDate(d[k], day);
+    }
+    p.dates = d;
+  }
+  const migrateRange = arr => (arr||[]).map(r => {
+    if(typeof r.fromYm !== 'number' && typeof r.toYm !== 'number') return r;
+    const out = {...r};
+    if(typeof r.fromYm === 'number') { out.fromDate = toDate(r.fromYm, 1); delete out.fromYm; }
+    if(typeof r.toYm === 'number') { out.toDate = toDate(r.toYm, daysInMonth(Math.floor(r.toYm/100), r.toYm%100)); delete out.toYm; }
+    return out;
+  });
+  if(p.extraIncomes) p.extraIncomes = migrateRange(p.extraIncomes);
+  if(p.extraExpenses) p.extraExpenses = migrateRange(p.extraExpenses);
+  if(p.extraOneoffs) p.extraOneoffs = (p.extraOneoffs||[]).map(r => {
+    if(typeof r.ym !== 'number') return r;
+    const out = {...r, date:toDate(r.ym,1)}; delete out.ym; return out;
+  });
+  return p;
+}
+
 const FC = createContext(null);
 function FinanceProvider({children}) {
   const { schedulePush, hydrated } = useSync();
   const [A, setA] = useState(() => {
     try { const s = localStorage.getItem('FinancePlan_A'); if(s) {
-      const parsed = JSON.parse(s);
+      const parsed = migrateDates(JSON.parse(s));
       if(!parsed.tax) parsed.tax = DEFAULTS.tax;
       if(parsed.tax.workDedYou === undefined) parsed.tax = {...DEFAULTS.tax, ...parsed.tax};
       return {...DEFAULTS, ...parsed, tax:{...DEFAULTS.tax, ...parsed.tax}};
@@ -30,7 +90,7 @@ function FinanceProvider({children}) {
   useEffect(() => {
     if(!hydrated) return;
     try { const s = localStorage.getItem('FinancePlan_A'); if(s) {
-      const parsed = JSON.parse(s);
+      const parsed = migrateDates(JSON.parse(s));
       if(!parsed.tax) parsed.tax = DEFAULTS.tax;
       if(parsed.tax.workDedYou === undefined) parsed.tax = {...DEFAULTS.tax, ...parsed.tax};
       setA({...DEFAULTS, ...parsed, tax:{...DEFAULTS.tax, ...parsed.tax}});
@@ -43,7 +103,6 @@ function FinanceProvider({children}) {
   }, [A, schedulePush]);
 
   const update = useCallback((sec, key, val) => setA(p => ({...p, [sec]:{...p[sec], [key]:val}})), []);
-  const WPM = 365.25/12/7;
   const actualByMonth = useActualByMonth();
 
   const fetchRate = useCallback(async () => {
@@ -72,42 +131,43 @@ function FinanceProvider({children}) {
     const ccNopr = childcare.dailyRate*(1-childcare.discount);
     const ccPr = childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate);
     const oo = {}; const ooItems = {};
-    const add = (ym,v,label) => { oo[ym] = (oo[ym]||0)+v; if(v) (ooItems[ym]=ooItems[ym]||[]).push({label,amt:v}); };
+    const bucket = ds => { const y=parseInt(ds.slice(0,4)), m=parseInt(ds.slice(5,7)); return y*100+m; };
+    const add = (ds,v,label) => { if(!ds) return; const b=bucket(ds); oo[b] = (oo[b]||0)+v; if(v) (ooItems[b]=ooItems[b]||[]).push({label,amt:v}); };
     add(dates.tuit1, oneoff.tuit1, 'Tuition Sem 1'); add(dates.tuit2, oneoff.tuit2, 'Tuition Sem 2');
     const v485 = oneoff.v485pri+oneoff.v485sec+oneoff.v485adm+oneoff.oshc+oneoff.skills+oneoff.english+oneoff.police+oneoff.medicals;
     add(dates.lodge485, v485, '485 Visa Lodgement');
     add(dates.agentPay, (oneoff.agent+oneoff.skills2), 'Agent & Misc');
     add(dates.carMonth, expenses.carCost, 'Car Purchase');
     add(dates.prGrant, (oneoff.prPri+oneoff.prSec+oneoff.stateNom), 'PR Grant');
-    (extraOneoffs||[]).forEach(x => { if(x.ym && x.amount) add(x.ym, x.amount, x.label||'Extra One-off'); });
+    (extraOneoffs||[]).forEach(x => { if(x.date && x.amount) add(x.date, x.amount, x.label||'Extra One-off'); });
 
     function fyRefund(youAnnual, wifeAnnual) {
       return tax.workDedYou * marginalRate(youAnnual) + tax.workDedWife * marginalRate(wifeAnnual);
     }
     const taxMap = {};
-    taxMap[dates.tax1] = fyRefund(income.yourSalLow*52 + income.extraYou*26, income.wifeP1*52);
-    taxMap[dates.tax2] = fyRefund(income.yourSalHigh*52, income.wifeP2*52 + income.freelance*52);
-    taxMap[dates.tax3] = fyRefund(income.yourSalHigh*52, income.wifeP3*52 + income.freelance*52);
+    const addTax = (ds,v) => { if(!ds) return; const b=bucket(ds); taxMap[b] = (taxMap[b]||0)+v; };
+    addTax(dates.tax1, fyRefund(income.yourSalLow*52 + income.extraYou*26, income.wifeP1*52));
+    addTax(dates.tax2, fyRefund(income.yourSalHigh*52, income.wifeP2*52 + income.freelance*52));
+    addTax(dates.tax3, fyRefund(income.yourSalHigh*52, income.wifeP3*52 + income.freelance*52));
 
     const rows = []; let balA = savings.acctA, balB = savings.acctB; let y=2026, m=6;
     const ML = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     while(y*100+m <= 202807){
       const ym = y*100+m;
-      const yourSal = (ym<dates.yourSalRise?income.yourSalLow:income.yourSalHigh)*WPM;
-      const wifeSal = (ym<dates.wifeP2?income.wifeP1:ym<dates.wifeP3?income.wifeP2:income.wifeP3)*WPM;
-      const extra = ym<=dates.extraEnd ? income.extraYou*WPM : 0;
-      const freelance = income.freelance*WPM;
-      const extraInc = (extraIncomes||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm)
-        .reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0);
-      const intA = Math.max(0,balA)*savings.macRate/12;
-      const intB = Math.max(0,balB)*savings.macRate/12;
+      const D = daysInMonth(y,m);
+      const yourSal = monthFromTiers(y,m,[{from:'',rate:income.yourSalLow},{from:dates.yourSalRise,rate:income.yourSalHigh}]);
+      const wifeSal = monthFromTiers(y,m,[{from:'',rate:income.wifeP1},{from:dates.wifeP2,rate:income.wifeP2},{from:dates.wifeP3,rate:income.wifeP3}]);
+      const extra = monthFromTiers(y,m,[{from:'',rate:income.extraYou},{from:addDays(dates.extraEnd,1),rate:0}]);
+      const freelance = income.freelance*(D/7);
+      const extraInc = (extraIncomes||[]).reduce((s,r)=>s+monthOverlapAmount(y,m,r.fromDate,r.toDate,r.amount,r.weekly),0);
+      const intA = Math.max(0,balA)*savings.macRate*D/365.25;
+      const intB = Math.max(0,balB)*savings.macRate*D/365.25;
       const taxRet = taxMap[ym] || 0;
       const totalInc = yourSal+wifeSal+extra+freelance+extraInc+intA+intB+taxRet;
-      const living = (ym<dates.expDrop?expenses.expWk:expenses.expWkPost)*WPM;
-      const carRun = ym>=dates.carMonth ? expenses.carRun*WPM : 0;
-      const cc = ym<dates.childcareStart ? 0 : ym<dates.ccsStart ? ccNopr*childcare.days*WPM : ccPr*childcare.days*WPM;
-      const extraExp = (extraExpenses||[]).filter(r=>r.fromYm&&r.toYm&&ym>=r.fromYm&&ym<=r.toYm)
-        .reduce((s,r)=>s+(r.weekly?r.amount*WPM:r.amount),0);
+      const living = monthFromTiers(y,m,[{from:'',rate:expenses.expWk},{from:dates.expDrop,rate:expenses.expWkPost}]);
+      const carRun = monthFromTiers(y,m,[{from:'',rate:0},{from:dates.carMonth,rate:expenses.carRun}]);
+      const cc = monthFromTiers(y,m,[{from:'',rate:0},{from:dates.childcareStart,rate:ccNopr*childcare.days},{from:dates.ccsStart,rate:ccPr*childcare.days}]);
+      const extraExp = (extraExpenses||[]).reduce((s,r)=>s+monthOverlapAmount(y,m,r.fromDate,r.toDate,r.amount,r.weekly),0);
       const ooThis = oo[ym] || 0;
       const totalExp = living+carRun+cc+extraExp+ooThis;
       const netB = totalInc - totalExp - intA; // Account B net flow (intA stays in A)
@@ -193,8 +253,8 @@ function Field({label,hint,value,onChange,prefix=false,pct=false}) {
 function DateField({label,hint,value,onChange}) {
   return React.createElement('div', {className:'input-group'},
     React.createElement('label', {className:'input-label'}, label),
-    React.createElement('input', {type:'month', className:'input-field', value:ymStr(value),
-      onChange: e => { const v = strYm(e.target.value); if(v>0) onChange(v); }}),
+    React.createElement('input', {type:'date', className:'input-field', value:value||'',
+      onChange: e => { if(e.target.value) onChange(e.target.value); }}),
     hint && React.createElement('span', {className:'input-hint'}, hint)
   );
 }
@@ -227,8 +287,8 @@ function DynRowItem({row,onUpdate,onRemove,fields}) {
       );
       if(f.type==='date') return React.createElement('div', {key:f.key, className:'input-group'},
         React.createElement('label', {className:'input-label'}, f.label),
-        React.createElement('input', {type:'month', className:'input-field', value:ymStr(row[f.key]||202606),
-          onChange: e => { const v = strYm(e.target.value); if(v>0) onUpdate(f.key, v); }})
+        React.createElement('input', {type:'date', className:'input-field', value:row[f.key]||'',
+          onChange: e => { if(e.target.value) onUpdate(f.key, e.target.value); }})
       );
       if(f.type==='select') return React.createElement('div', {key:f.key, className:'input-group'},
         React.createElement('label', {className:'input-label'}, f.label),
@@ -292,12 +352,12 @@ function Assumptions({onGo}) {
       React.createElement(DynList, {items:extraIncomes,
         onChange: v => setA(p=>({...p,extraIncomes:v})),
         addLabel:'Add Income Stream',
-        newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
+        newItem:{label:'',amount:0,fromDate:'2026-06-01',toDate:'2028-07-31',weekly:true},
         fields:[
           {key:'label',label:'Label',type:'text'},
           {key:'amount',label:'Amount',prefix:true},
-          {key:'fromYm',label:'From',type:'date'},
-          {key:'toYm',label:'To',type:'date'},
+          {key:'fromDate',label:'From',type:'date'},
+          {key:'toDate',label:'To',type:'date'},
           {key:'weekly',label:'Frequency',type:'select'},
         ]})
     ),
@@ -328,12 +388,12 @@ function Assumptions({onGo}) {
       React.createElement(DynList, {items:extraExpenses,
         onChange: v => setA(p=>({...p,extraExpenses:v})),
         addLabel:'Add Expense',
-        newItem:{label:'',amount:0,fromYm:202606,toYm:202807,weekly:true},
+        newItem:{label:'',amount:0,fromDate:'2026-06-01',toDate:'2028-07-31',weekly:true},
         fields:[
           {key:'label',label:'Label',type:'text'},
           {key:'amount',label:'Amount',prefix:true},
-          {key:'fromYm',label:'From',type:'date'},
-          {key:'toYm',label:'To',type:'date'},
+          {key:'fromDate',label:'From',type:'date'},
+          {key:'toDate',label:'To',type:'date'},
           {key:'weekly',label:'Frequency',type:'select'},
         ]})
     ),
@@ -419,11 +479,11 @@ function Assumptions({onGo}) {
       React.createElement(DynList, {items:extraOneoffs,
         onChange: v => setA(p=>({...p,extraOneoffs:v})),
         addLabel:'Add One-Off Cost',
-        newItem:{label:'',amount:0,ym:202607},
+        newItem:{label:'',amount:0,date:'2026-07-01'},
         fields:[
           {key:'label',label:'Description',type:'text'},
           {key:'amount',label:'Amount',prefix:true},
-          {key:'ym',label:'Month',type:'date'},
+          {key:'date',label:'Date',type:'date'},
         ]})
     ),
 

@@ -1,4 +1,4 @@
-const NAV = [{id:'projection',icon:'flag',label:'Family Plan'},{id:'life',icon:'home',label:'Life Plan'},{id:'cashflow',icon:'credit-card',label:'Monthly Cash'}];
+const NAV = [{id:'projection',icon:'flag',label:'2028 Plan'},{id:'life',icon:'home',label:'Life Plan'},{id:'cashflow',icon:'credit-card',label:'Monthly Cash'}];
 
 const NavCtx = createContext(null);
 const useNav = () => useContext(NavCtx);

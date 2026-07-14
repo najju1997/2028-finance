@@ -152,8 +152,6 @@ function SyncBadge() {
 const fmt = n => n==null ? '—' : (n<0?'-':'') + '$' + Math.abs(n).toLocaleString('en-AU',{maximumFractionDigits:0});
 const fmtA = fmt;
 const fmtL = n => (n/1e5).toFixed(2)+'L';
-const ymStr = ym => { const s=String(ym); return s.slice(0,4)+'-'+s.slice(4); };
-const strYm = s => { const v=parseInt(s.replace('-','')); return isNaN(v)?0:v; };
 
 // ═══════════════════════════════════════════════════════════════
 // FAMILY PLAN
