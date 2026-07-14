@@ -71,15 +71,15 @@ function FinanceProvider({children}) {
     const {dates,income,savings,expenses,childcare,tax,oneoff,extraIncomes,extraExpenses,extraOneoffs} = A;
     const ccNopr = childcare.dailyRate*(1-childcare.discount);
     const ccPr = childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate);
-    const oo = {};
-    const add = (ym,v) => { oo[ym] = (oo[ym]||0)+v; };
-    add(dates.tuit1, oneoff.tuit1); add(dates.tuit2, oneoff.tuit2);
+    const oo = {}; const ooItems = {};
+    const add = (ym,v,label) => { oo[ym] = (oo[ym]||0)+v; if(v) (ooItems[ym]=ooItems[ym]||[]).push({label,amt:v}); };
+    add(dates.tuit1, oneoff.tuit1, 'Tuition Sem 1'); add(dates.tuit2, oneoff.tuit2, 'Tuition Sem 2');
     const v485 = oneoff.v485pri+oneoff.v485sec+oneoff.v485adm+oneoff.oshc+oneoff.skills+oneoff.english+oneoff.police+oneoff.medicals;
-    add(dates.lodge485, v485);
-    add(dates.agentPay, (oneoff.agent+oneoff.skills2));
-    add(dates.carMonth, expenses.carCost);
-    add(dates.prGrant, (oneoff.prPri+oneoff.prSec+oneoff.stateNom));
-    (extraOneoffs||[]).forEach(x => { if(x.ym && x.amount) add(x.ym, x.amount); });
+    add(dates.lodge485, v485, '485 Visa Lodgement');
+    add(dates.agentPay, (oneoff.agent+oneoff.skills2), 'Agent & Misc');
+    add(dates.carMonth, expenses.carCost, 'Car Purchase');
+    add(dates.prGrant, (oneoff.prPri+oneoff.prSec+oneoff.stateNom), 'PR Grant');
+    (extraOneoffs||[]).forEach(x => { if(x.ym && x.amount) add(x.ym, x.amount, x.label||'Extra One-off'); });
 
     function fyRefund(youAnnual, wifeAnnual) {
       return tax.workDedYou * marginalRate(youAnnual) + tax.workDedWife * marginalRate(wifeAnnual);
@@ -121,7 +121,7 @@ function FinanceProvider({children}) {
       balA += intA;
       balB += (netReal !== null ? netReal : netB);
       rows.push({ym, label:ML[m-1]+'-'+String(y).slice(2), yourSal, wifeSal, extra, freelance, extraInc,
-        intA, intB, taxRet, totalInc, living, carRun, cc, extraExp, ooThis, totalExp,
+        intA, intB, taxRet, totalInc, living, carRun, cc, extraExp, ooThis, ooDetail:ooItems[ym]||[], totalExp,
         net: netB+intA, netReal, balA, balB, total: balA+balB});
       m++; if(m>12){ m=1; y++; }
     }
@@ -147,7 +147,15 @@ const TT = ({active,payload,label}) => {
   if(!active || !payload?.length) return null;
   return React.createElement('div', {style:{background:'var(--surface2)',border:'1px solid var(--border2)',borderRadius:'var(--radius-sm)',padding:'.6rem .9rem',fontSize:'var(--t-xs)'}},
     React.createElement('p', {style:{color:'var(--gold)',fontFamily:"'Syne',sans-serif",fontWeight:700,marginBottom:'.3rem'}}, label),
-    ...payload.map(p => React.createElement('p', {key:p.dataKey, style:{color:p.color}}, p.name+': '+fmt(p.value)))
+    ...payload.map(p => {
+      const detail = p.dataKey==='ooThis' ? p.payload?.ooDetail : null;
+      return React.createElement('div', {key:p.dataKey},
+        React.createElement('p', {style:{color:p.color}}, p.name+': '+fmt(p.value)),
+        detail && detail.length>0 && React.createElement('div', {style:{marginTop:'.15rem',marginBottom:'.2rem'}},
+          ...detail.map((d,i) => React.createElement('p', {key:i, style:{color:'var(--text3)',marginLeft:'.6rem'}}, '– '+d.label+': '+fmt(d.amt)))
+        )
+      );
+    })
   );
 };
 

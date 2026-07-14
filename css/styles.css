@@ -53,6 +53,9 @@ body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--b
 .input-field{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:var(--t-base);padding:.5rem .75rem;width:100%;transition:border-color .2s}
 .input-field:focus{outline:none;border-color:var(--gold-dim)}
 .input-field.has-prefix{padding-left:calc(.75rem*2 + .8em)}
+input[type="date"].input-field::-webkit-calendar-picker-indicator,input[type="month"].input-field::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer;opacity:.8}
+input[type="date"].input-field::-webkit-calendar-picker-indicator:hover,input[type="month"].input-field::-webkit-calendar-picker-indicator:hover{opacity:1}
+[data-theme="light"] input[type="date"].input-field::-webkit-calendar-picker-indicator,[data-theme="light"] input[type="month"].input-field::-webkit-calendar-picker-indicator{filter:none}
 .info-box{padding:.6rem 1rem;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid var(--gold);margin-top:.75rem}
 .info-box p{font-size:var(--t-xs);color:var(--text2)}
 .warn-banner{background:linear-gradient(135deg,rgba(224,85,85,.12),rgba(224,85,85,.04));border:1px solid var(--red);border-left:4px solid var(--red);border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1.25rem}
