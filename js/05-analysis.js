@@ -11,9 +11,8 @@ function WaterfallChart({ txns, rec }) {
   const income = txns.filter(t => isIncomeTxn(t, rec)).reduce((s,t)=>s+t.amount, 0);
   const catAmt = {};
   txns.filter(t => isExpenseTxn(t, rec)).forEach(t => { catAmt[t.category] = (catAmt[t.category]||0) + Math.abs(t.amount); });
-  // Order: fixed essentials first, then variable
-  const order = ['Rent/Housing','Utilities','Insurance','Education','Healthcare','Tech','Groceries','Transport/Fuel','BNPL/StepPay','Eating Out','Shopping','Entertainment','Other'];
-  const orderedCats = order.filter(c => catAmt[c] > 0).concat(Object.keys(catAmt).filter(c => !order.includes(c) && catAmt[c] > 0));
+  // Highest expense first (left), lowest last (right)
+  const orderedCats = Object.keys(catAmt).filter(c => catAmt[c] > 0).sort((a,b) => catAmt[b]-catAmt[a]);
 
   if (income === 0 && orderedCats.length === 0) return null;
 
@@ -348,6 +347,7 @@ function BNPLExposure({ allTxns, rec }) {
 
 // ── 5. Cash Runway ─────────────────────────────────────────────
 function CashRunway({ allTxns, rec }) {
+  const { allCats } = useTxn();
   const months = useMemo(() => [...new Set(allTxns.map(t => t.date.slice(0,7)))].sort().reverse(), [allTxns]);
   const [mode, setMode] = useState('month');
   const [selMonth, setSelMonth] = useState(() => months[0] || '');
@@ -378,6 +378,11 @@ function CashRunway({ allTxns, rec }) {
   const dailyBurn = expenses > 0 ? expenses / days : 0;
   const deficit = net < 0 ? Math.abs(net) : 0;
   const periodLabel = mode === 'month' ? 'month' : 'period';
+  const catAmt = {};
+  txns.filter(t => isExpenseTxn(t, rec)).forEach(t => { catAmt[t.category] = (catAmt[t.category]||0) + Math.abs(t.amount); });
+  const catBreakdown = Object.entries(catAmt)
+    .map(([cat,total]) => ({cat, total, weekly: total/days*7, monthly: total/days*30}))
+    .sort((a,b) => b.total-a.total);
   const monthlyAvgNet = mode !== 'month' ? net / Math.max(1, days / 30) : net;
 
   const modeBtnStyle = active => ({
@@ -437,6 +442,30 @@ function CashRunway({ allTxns, rec }) {
             React.createElement('div', {style:{fontSize:'var(--t-xs)',color:'var(--text3)',marginTop:'.2rem'}},
               mode !== 'month' ? '≈ '+fmt(Math.abs(monthlyAvgNet))+'/month avg' : 'short every month')
           )
+    ),
+    catBreakdown.length > 0 && React.createElement('div', {style:{marginBottom:'1rem'}},
+      React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--text2)',marginBottom:'.5rem'}}, 'Burn rate by category'),
+      React.createElement('div', {className:'table-wrap'},
+        React.createElement('table', {className:'data-table'},
+          React.createElement('thead', null, React.createElement('tr', null,
+            React.createElement('th', {style:{textAlign:'left'}}, 'Category'),
+            React.createElement('th', null, 'Weekly Avg'),
+            React.createElement('th', null, 'Monthly Avg'),
+          )),
+          React.createElement('tbody', null,
+            ...catBreakdown.map(r => {
+              const c = allCats[r.cat] || {color:'#94a3b8',icon:'tag'};
+              return React.createElement('tr', {key:r.cat},
+                React.createElement('td', {style:{textAlign:'left'}},
+                  React.createElement('span', {style:{fontSize:'var(--t-xs)',padding:'.1rem .4rem',borderRadius:'.5rem',background:c.color+'1a',color:c.color}}, React.createElement(IconLabel,{icon:c.icon,size:11},r.cat))
+                ),
+                React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:600}}, fmt(r.weekly)),
+                React.createElement('td', {style:{fontFamily:"'Syne',sans-serif",fontWeight:700,color:'var(--red)'}}, fmt(r.monthly)),
+              );
+            })
+          )
+        )
+      )
     ),
     net < 0 && React.createElement('div', {style:{padding:'.75rem 1rem',background:'var(--bg2)',borderLeft:'3px solid var(--red)',borderRadius:'var(--radius-sm)'}},
       React.createElement('div', {style:{fontSize:'var(--t-sm)',fontWeight:700,color:'var(--red)',marginBottom:'.25rem'}}, React.createElement(IconLabel,{icon:'alert-triangle'},'Cashflow alert')),
@@ -515,7 +544,7 @@ function CategoryMonthChart({ allTxns, rec }) {
           style:{padding:'.25rem .55rem',borderRadius:'1rem',border:'1px solid '+(on?c.color:'var(--border)'),
             background:on?c.color+'22':'transparent',color:on?c.color:'var(--text3)',
             cursor:'pointer',fontSize:'var(--t-xs)',fontWeight:on?600:400,transition:'all .15s'}
-        }, c.icon+' '+cat);
+        }, cat);
       })
     ),
     activeCats.length === 0
