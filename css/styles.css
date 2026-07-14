@@ -47,6 +47,9 @@ body{font-family:'DM Sans',sans-serif;font-size:var(--t-base);background:var(--b
 .input-sub-label{font-size:var(--t-sm);color:var(--text3);margin:1rem 0 .5rem;font-family:'Syne',sans-serif;font-weight:700;border-bottom:1px solid var(--border);padding-bottom:.25rem}
 .input-group{display:flex;flex-direction:column;gap:.25rem}
 .input-label{font-size:var(--t-xs);font-weight:500;color:var(--text2);letter-spacing:.05em;text-transform:uppercase}
+input.input-label-edit{background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);padding:1px 4px;margin:0 -4px;box-sizing:border-box;font-family:inherit;cursor:text}
+input.input-label-edit:hover{border-color:var(--border)}
+input.input-label-edit:focus{outline:none;border-color:var(--gold-dim);background:var(--bg2);color:var(--text)}
 .input-hint{font-size:var(--t-xs);color:var(--text3);margin-top:2px}
 .input-wrap{position:relative}
 .input-prefix{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--gold);font-size:var(--t-sm);pointer-events:none}

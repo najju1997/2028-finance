@@ -2,6 +2,10 @@ const DEFAULTS = {
   dates:{yourSalRise:'2026-07-01',wifeP2:'2026-07-01',wifeP3:'2027-07-01',extraEnd:'2026-11-30',expDrop:'2027-07-01',
     childcareStart:'2027-07-01',ccsStart:'2027-11-01',lodge485:'2027-07-01',agentPay:'2027-08-01',carMonth:'2026-06-01',
     prGrant:'2027-11-01',tuit1:'2026-07-01',tuit2:'2027-01-01',tax1:'2026-07-01',tax2:'2027-07-01',tax3:'2028-07-01'},
+  dateLabels:{yourSalRise:'Your Salary Rises',wifeP2:'Wife Salary Phase 2',wifeP3:'Wife Salary Phase 3',
+    extraEnd:'Your Extra Income Ends',expDrop:'Expenses Drop',childcareStart:'Childcare Starts',ccsStart:'CCS Starts (after PR)',
+    lodge485:'485 Visa Lodgement',agentPay:'Agent Fees Paid',carMonth:'Car Purchase Month',prGrant:'PR Grant Month',
+    tuit1:'Tuition Payment 1',tuit2:'Tuition Payment 2'},
   income:{yourSalLow:800,yourSalHigh:1323,wifeP1:736,wifeP2:944,wifeP3:1500,extraYou:630,freelance:100},
   savings:{acctA:5500,acctB:11500,macRate:0.045},
   expenses:{expWk:1300,expWkPost:950,carCost:10000,carRun:175},
@@ -250,9 +254,12 @@ function Field({label,hint,value,onChange,prefix=false,pct=false}) {
   );
 }
 
-function DateField({label,hint,value,onChange}) {
+function DateField({label,hint,value,onChange,onLabelChange}) {
   return React.createElement('div', {className:'input-group'},
-    React.createElement('label', {className:'input-label'}, label),
+    onLabelChange
+      ? React.createElement('input', {type:'text', className:'input-label input-label-edit', value:label,
+          onChange: e => onLabelChange(e.target.value)})
+      : React.createElement('label', {className:'input-label'}, label),
     React.createElement('input', {type:'date', className:'input-field', value:value||'',
       onChange: e => { if(e.target.value) onChange(e.target.value); }}),
     hint && React.createElement('span', {className:'input-hint'}, hint)
@@ -321,25 +328,26 @@ function DynList({items,onChange,fields,addLabel,newItem}) {
 function Assumptions({onGo}) {
   const {A,update,setA,fetchRate} = useFinance();
   const u = (s,k) => v => update(s,k,v);
-  const {dates,income,savings,expenses,childcare,tax,nepal,oneoff,extraIncomes,extraExpenses,extraOneoffs} = A;
+  const {dates,dateLabels,income,savings,expenses,childcare,tax,nepal,oneoff,extraIncomes,extraExpenses,extraOneoffs} = A;
+  const dl = k => v => update('dateLabels',k,v);
   return React.createElement('div', null,
     React.createElement('h1', {className:'page-title'}, 'Assumptions'),
     React.createElement('p', {className:'page-subtitle'}, 'Edit any value freely. Saved automatically and synced across devices.'),
 
     React.createElement(Section, {icon:'calendar', title:'Key Dates'}, G(
-      React.createElement(DateField, {label:'Your Salary Rises', hint:'$800→$1,323/wk', value:dates.yourSalRise, onChange:u('dates','yourSalRise')}),
-      React.createElement(DateField, {label:'Wife Salary Phase 2', hint:'$736→$944/wk', value:dates.wifeP2, onChange:u('dates','wifeP2')}),
-      React.createElement(DateField, {label:'Wife Salary Phase 3', hint:'$944→$1,500/wk', value:dates.wifeP3, onChange:u('dates','wifeP3')}),
-      React.createElement(DateField, {label:'Your Extra Income Ends', value:dates.extraEnd, onChange:u('dates','extraEnd')}),
-      React.createElement(DateField, {label:'Expenses Drop', hint:'$1,300→$950/wk', value:dates.expDrop, onChange:u('dates','expDrop')}),
-      React.createElement(DateField, {label:'Childcare Starts', value:dates.childcareStart, onChange:u('dates','childcareStart')}),
-      React.createElement(DateField, {label:'CCS Starts (after PR)', value:dates.ccsStart, onChange:u('dates','ccsStart')}),
-      React.createElement(DateField, {label:'485 Visa Lodgement', value:dates.lodge485, onChange:u('dates','lodge485')}),
-      React.createElement(DateField, {label:'Agent Fees Paid', value:dates.agentPay, onChange:u('dates','agentPay')}),
-      React.createElement(DateField, {label:'Car Purchase Month', value:dates.carMonth, onChange:u('dates','carMonth')}),
-      React.createElement(DateField, {label:'PR Grant Month', value:dates.prGrant, onChange:u('dates','prGrant')}),
-      React.createElement(DateField, {label:'Tuition Payment 1', value:dates.tuit1, onChange:u('dates','tuit1')}),
-      React.createElement(DateField, {label:'Tuition Payment 2', value:dates.tuit2, onChange:u('dates','tuit2')}),
+      React.createElement(DateField, {label:dateLabels.yourSalRise, onLabelChange:dl('yourSalRise'), hint:'$800→$1,323/wk', value:dates.yourSalRise, onChange:u('dates','yourSalRise')}),
+      React.createElement(DateField, {label:dateLabels.wifeP2, onLabelChange:dl('wifeP2'), hint:'$736→$944/wk', value:dates.wifeP2, onChange:u('dates','wifeP2')}),
+      React.createElement(DateField, {label:dateLabels.wifeP3, onLabelChange:dl('wifeP3'), hint:'$944→$1,500/wk', value:dates.wifeP3, onChange:u('dates','wifeP3')}),
+      React.createElement(DateField, {label:dateLabels.extraEnd, onLabelChange:dl('extraEnd'), value:dates.extraEnd, onChange:u('dates','extraEnd')}),
+      React.createElement(DateField, {label:dateLabels.expDrop, onLabelChange:dl('expDrop'), hint:'$1,300→$950/wk', value:dates.expDrop, onChange:u('dates','expDrop')}),
+      React.createElement(DateField, {label:dateLabels.childcareStart, onLabelChange:dl('childcareStart'), value:dates.childcareStart, onChange:u('dates','childcareStart')}),
+      React.createElement(DateField, {label:dateLabels.ccsStart, onLabelChange:dl('ccsStart'), value:dates.ccsStart, onChange:u('dates','ccsStart')}),
+      React.createElement(DateField, {label:dateLabels.lodge485, onLabelChange:dl('lodge485'), value:dates.lodge485, onChange:u('dates','lodge485')}),
+      React.createElement(DateField, {label:dateLabels.agentPay, onLabelChange:dl('agentPay'), value:dates.agentPay, onChange:u('dates','agentPay')}),
+      React.createElement(DateField, {label:dateLabels.carMonth, onLabelChange:dl('carMonth'), value:dates.carMonth, onChange:u('dates','carMonth')}),
+      React.createElement(DateField, {label:dateLabels.prGrant, onLabelChange:dl('prGrant'), value:dates.prGrant, onChange:u('dates','prGrant')}),
+      React.createElement(DateField, {label:dateLabels.tuit1, onLabelChange:dl('tuit1'), value:dates.tuit1, onChange:u('dates','tuit1')}),
+      React.createElement(DateField, {label:dateLabels.tuit2, onLabelChange:dl('tuit2'), value:dates.tuit2, onChange:u('dates','tuit2')}),
     )),
 
     React.createElement(Section, {icon:'dollar-sign', title:'Your Salary'},
