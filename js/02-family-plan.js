@@ -73,13 +73,13 @@ function FinanceProvider({children}) {
     const ccPr = childcare.dailyRate*(1-childcare.discount)*(1-childcare.ccsRate);
     const oo = {};
     const add = (ym,v) => { oo[ym] = (oo[ym]||0)+v; };
-    add(dates.tuit1, oneoff.tuit1*1.1); add(dates.tuit2, oneoff.tuit2*1.1);
+    add(dates.tuit1, oneoff.tuit1); add(dates.tuit2, oneoff.tuit2);
     const v485 = oneoff.v485pri+oneoff.v485sec+oneoff.v485adm+oneoff.oshc+oneoff.skills+oneoff.english+oneoff.police+oneoff.medicals;
-    add(dates.lodge485, v485*1.1);
-    add(dates.agentPay, (oneoff.agent+oneoff.skills2)*1.1);
-    add(dates.carMonth, expenses.carCost*1.1);
-    add(dates.prGrant, (oneoff.prPri+oneoff.prSec+oneoff.stateNom)*1.1);
-    (extraOneoffs||[]).forEach(x => { if(x.ym && x.amount) add(x.ym, x.amount*(1+(x.buffer||10)/100)); });
+    add(dates.lodge485, v485);
+    add(dates.agentPay, (oneoff.agent+oneoff.skills2));
+    add(dates.carMonth, expenses.carCost);
+    add(dates.prGrant, (oneoff.prPri+oneoff.prSec+oneoff.stateNom));
+    (extraOneoffs||[]).forEach(x => { if(x.ym && x.amount) add(x.ym, x.amount); });
 
     function fyRefund(youAnnual, wifeAnnual) {
       return tax.workDedYou * marginalRate(youAnnual) + tax.workDedWife * marginalRate(wifeAnnual);
@@ -380,9 +380,9 @@ function Assumptions({onGo}) {
       )
     ),
 
-    React.createElement(Section, {icon:'clipboard', title:'One-Off Costs (from Acct B + 10% buffer)', open:false},
+    React.createElement(Section, {icon:'clipboard', title:'One-Off Costs (from Acct B)', open:false},
       React.createElement('div', {className:'info-box', style:{marginBottom:'1rem'}},
-        React.createElement('p', null, 'Set to $0 if not applicable. 10% buffer auto-added.')
+        React.createElement('p', null, 'Set to $0 if not applicable.')
       ),
       SL('TUITION'), G(
         React.createElement(Field, {label:'Masters Sem 1', value:oneoff.tuit1, onChange:u('oneoff','tuit1'), prefix:true}),
@@ -411,12 +411,11 @@ function Assumptions({onGo}) {
       React.createElement(DynList, {items:extraOneoffs,
         onChange: v => setA(p=>({...p,extraOneoffs:v})),
         addLabel:'Add One-Off Cost',
-        newItem:{label:'',amount:0,ym:202607,buffer:10},
+        newItem:{label:'',amount:0,ym:202607},
         fields:[
           {key:'label',label:'Description',type:'text'},
           {key:'amount',label:'Amount',prefix:true},
           {key:'ym',label:'Month',type:'date'},
-          {key:'buffer',label:'Buffer %'},
         ]})
     ),
 
@@ -429,8 +428,8 @@ function Assumptions({onGo}) {
 function Summary({rows,nepal}) {
   const last = rows[rows.length-1];
   const {A} = useFinance();
-  const totalOO = (Object.values(A.oneoff).reduce((a,b)=>a+b,0)+A.expenses.carCost)*1.1
-    + ((A.extraOneoffs||[]).reduce((s,r)=>s+r.amount*(1+(r.buffer||10)/100),0));
+  const totalOO = (Object.values(A.oneoff).reduce((a,b)=>a+b,0)+A.expenses.carCost)
+    + ((A.extraOneoffs||[]).reduce((s,r)=>s+r.amount,0));
   return React.createElement('div', null,
     React.createElement('div', {className:'stat-grid'},
       React.createElement('div', {className:'stat-card highlight'},
