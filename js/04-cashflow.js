@@ -310,7 +310,7 @@ function reconcileAll(allTxns) {
 
   // Stage A: StepPay PYMT credits ↔ StepPay Repayments (description-based, hardest)
   const pymts = allTxns.filter(t => t.amount > 0 && (t.description||'').toUpperCase().includes('STEPPAY PYMT'));
-  const reps = allTxns.filter(t => t.amount < 0 && (t.description||'').includes('StepPay Repayment'));
+  const reps = allTxns.filter(t => t.amount < 0 && (t.description||'').toUpperCase().includes('STEPPAY REPAYMENT'));
   const usedP = new Set();
   const repsSorted = [...reps].sort((a,b) => a.date.localeCompare(b.date));
   for (const rep of repsSorted) {
