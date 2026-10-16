@@ -100,6 +100,8 @@ function splitCsvLine(line) {
 
 function detectBank(text) {
   const first = (text.split(/\r?\n/)[0] || '').toLowerCase();
+  // Newer CommBank export: header row "Transaction Date","Description","Amount","Balance"
+  if (first.includes('transaction date') && first.includes('description') && first.includes('amount') && !first.includes('debit') && !first.includes('credit')) return 'commbank';
   if (first.includes('transaction date') && first.includes('debit') && first.includes('credit')) return 'macquarie';
   if (first.includes('narrative') && (first.includes('debit amount') || first.includes('credit amount'))) return 'westpac';
   if (first.includes('date') && first.includes('description') && (first.includes('debit') || first.includes('credit'))) return 'westpac';
@@ -111,7 +113,11 @@ const MONTHS = {JAN:'01',FEB:'02',MAR:'03',APR:'04',MAY:'05',JUN:'06',JUL:'07',A
 
 function parseDate(s) {
   s = (s || '').trim();
-  let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  // ISO timestamp with local offset, e.g. 2026-09-30T20:49:43.000+10:00 - the
+  // date part is already local, so take it as-is (no timezone conversion).
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/);
+  if (m) return m[1]+'-'+m[2]+'-'+m[3];
+  m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
   m = s.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/);
   if (m) { const mo = MONTHS[m[2].toUpperCase()]; if (mo) return m[3]+'-'+mo+'-'+m[1].padStart(2,'0'); }
@@ -120,14 +126,26 @@ function parseDate(s) {
 
 function parseCommBankCSV(text) {
   const rows = [];
-  for (const line of text.split(/\r?\n/).filter(l => l.trim())) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  // Legacy export has no header: Date, Amount, Description, Balance.
+  // Current export has a header row: Transaction Date, Description, Amount, Balance.
+  let iDate = 0, iAmt = 1, iDesc = 2, iBal = 3;
+  if (lines.length) {
+    const header = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+    if (header.includes('description') && header.includes('amount')) {
+      iDate = Math.max(header.indexOf('transaction date'), header.indexOf('date'), 0);
+      iAmt = header.indexOf('amount'); iDesc = header.indexOf('description');
+      iBal = header.indexOf('balance');
+    }
+  }
+  for (const line of lines) {
     const parts = splitCsvLine(line);
     if (parts.length < 3) continue;
-    const date = parseDate(parts[0]);
+    const date = parseDate(parts[iDate]);
     if (!date) continue;
-    const amount = parseFloat(String(parts[1]).replace(/[^0-9.\-]/g, ''));
+    const amount = parseFloat(String(parts[iAmt]).replace(/[^0-9.\-]/g, ''));
     if (isNaN(amount)) continue;
-    rows.push({ date, amount, description:(parts[2]||'').trim(), balance:(parts[3]||'').trim() });
+    rows.push({ date, amount, description:(parts[iDesc]||'').trim(), balance:iBal>=0?(parts[iBal]||'').trim():'' });
   }
   return rows;
 }
@@ -212,7 +230,8 @@ function detectAccount(rows, bank) {
   const joined = rows.map(r => r.description || '').join('\n').toUpperCase();
   if (joined.includes('DEFT PAYMENT')) return 'Rent Account';
   if (joined.includes('LUXOTTICA') || joined.includes('ESSILOR')) return 'Salary Account';
-  const emptyBal = rows.filter(r => !r.balance || r.balance.trim() === '').length;
+  // Credit cards have no running balance: blank in the legacy export, "0" in the current one.
+  const emptyBal = rows.filter(r => !r.balance || r.balance.trim() === '' || parseFloat(r.balance) === 0).length;
   const hasSteppayPymt = joined.includes('STEPPAY PYMT');
   if (emptyBal > rows.length * 0.7 && hasSteppayPymt) return 'StepPay';
   if (emptyBal > rows.length * 0.7) return 'Credit Card';
