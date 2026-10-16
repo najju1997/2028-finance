@@ -113,6 +113,29 @@ function filterNewTxns(existing, incoming) {
   });
 }
 
+// Account names are user-editable free text, so "Saloni", "Saloni " and
+// "saloni life" would each become a separate account. Names that differ only
+// by case, spacing or punctuation are treated as the same account.
+function cleanAcct(n) { return String(n || '').replace(/\s+/g, ' ').trim(); }
+function acctKeyOf(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function canonAccount(name, known) {
+  const c = cleanAcct(name);
+  if (!c) return c;
+  const k = acctKeyOf(c);
+  return (known || []).find(a => acctKeyOf(a) === k) || c;
+}
+// Most-used spelling wins for each group of equivalent names.
+function buildAcctCanon(txns) {
+  const counts = {};
+  (txns || []).forEach(t => {
+    const c = cleanAcct(t.account); if (!c) return;
+    const k = acctKeyOf(c); (counts[k] = counts[k] || {})[c] = ((counts[k] || {})[c] || 0) + 1;
+  });
+  const out = {};
+  Object.keys(counts).forEach(k => { out[k] = Object.entries(counts[k]).sort((a, b) => b[1] - a[1])[0][0]; });
+  return out;
+}
+
 function uid() { return Math.random().toString(36).slice(2, 11); }
 
 function splitCsvLine(line) {
@@ -379,6 +402,22 @@ function TxnProvider({ children }) {
     schedulePush();
   }, [T, schedulePush]);
 
+  // One-off cleanup of account names already stored (case/spacing variants).
+  useEffect(() => {
+    if (!hydrated) return;
+    setT(prev => {
+      const txns = prev.transactions || [];
+      const canon = buildAcctCanon(txns);
+      let changed = false;
+      const next = txns.map(t => {
+        const c = canon[acctKeyOf(t.account)];
+        if (c && c !== t.account) { changed = true; return { ...t, account: c }; }
+        return t;
+      });
+      return changed ? { ...prev, transactions: next } : prev;
+    });
+  }, [hydrated, T.transactions]);
+
   const rec = useMemo(() => reconcileAll(T.transactions || []), [T.transactions]);
 
   const allCats = useMemo(() => {
@@ -397,8 +436,12 @@ function TxnProvider({ children }) {
 
   const importTransactions = useCallback((newTxns, acctNames) => {
     setT(prev => {
-      const added = filterNewTxns(prev.transactions, newTxns);
-      return { ...prev, acctNames: { ...(prev.acctNames||{}), ...(acctNames||{}) }, transactions: [...(prev.transactions||[]), ...added] };
+      const known = [...new Set((prev.transactions||[]).map(t => t.account).filter(Boolean))];
+      const fix = n => { const c = canonAccount(n, known); if (c && !known.includes(c)) known.push(c); return c; };
+      const added = filterNewTxns(prev.transactions, newTxns).map(t => ({ ...t, account: fix(t.account) }));
+      const names = {};
+      Object.entries(acctNames||{}).forEach(([k, v]) => { names[k] = fix(v); });
+      return { ...prev, acctNames: { ...(prev.acctNames||{}), ...names }, transactions: [...(prev.transactions||[]), ...added] };
     });
   }, []);
   const addManual = useCallback(txn => {
@@ -484,9 +527,11 @@ function UploadZone({ onDone }) {
       else { raw = parseCommBankCSV(text); acctFromFile = detectAccount(raw, bank==='commbank'?'commbank':'unknown'); }
       if (!raw.length) { results.push({fname:file.name,bank,error:'No valid rows found',txns:[],total:0,dupes:0,fresh:0,account:'-'}); continue; }
       // Reuse the name the user gave this account on a previous upload.
-      const acctKey = bank + ':' + (bank === 'westpac' ? ((raw.find(r => r.acctNum) || {}).acctNum || '') : '') + ':' + acctFromFile;
+      const acctKey = bank + ':' + (bank === 'westpac' ? ((raw.find(r => r.acctNum) || {}).acctNum || '') : '') + ':' + acctFromFile
+        + (bank === 'westpac' && raw.some(r => r.preCat === 'Transfers') ? ':goal' : '');
       const savedName = (T.acctNames || {})[acctKey];
       if (savedName) acctFromFile = savedName;
+      acctFromFile = canonAccount(acctFromFile, (T.transactions||[]).map(t => t.account));
       const ids = assignTxnIds(raw);
       const txns = raw.map((r, i) => ({
         id: ids[i],
@@ -522,7 +567,9 @@ function UploadZone({ onDone }) {
   const totalFresh = previews.reduce((s,f) => s+f.fresh, 0);
   const bankLabel = {commbank:{icon:'bank',label:'CommBank'},macquarie:{icon:'landmark',label:'Macquarie'},westpac:{icon:'circle',label:'Westpac'},unknown:{icon:'help-circle',label:'Unknown'}};
 
+  const existingAccts = [...new Set((T.transactions||[]).map(t => t.account).filter(a => a && a !== 'Manual'))];
   return React.createElement('div', null,
+    React.createElement('datalist', {id:'acct-names'}, ...existingAccts.map(a => React.createElement('option', {key:a, value:a}))),
     React.createElement('div', {
       onDragOver:e=>{e.preventDefault();setDrag(true);},
       onDragLeave:()=>setDrag(false),
@@ -552,7 +599,7 @@ function UploadZone({ onDone }) {
             ),
             React.createElement('div', {className:'input-group',style:{margin:0,minWidth:'155px',flex:'1 1 155px'}},
               React.createElement('label', {className:'input-label'}, 'Account name'),
-              React.createElement('input', {type:'text',className:'input-field',value:f.account||'',onChange:e=>renameAcct(i,e.target.value)})
+              React.createElement('input', {type:'text',className:'input-field',list:'acct-names',value:f.account||'',onChange:e=>renameAcct(i,e.target.value)})
             ),
             React.createElement('button', {onClick:()=>removePrev(i),title:'Remove',style:{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:'.25rem .4rem',flexShrink:0}}, React.createElement(Icon,{name:'x',size:16}))
           ),
