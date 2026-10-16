@@ -116,7 +116,11 @@ function filterNewTxns(existing, incoming) {
 // Account names are user-editable free text, so "Saloni", "Saloni " and
 // "saloni life" would each become a separate account. Names that differ only
 // by case, spacing or punctuation are treated as the same account.
-function cleanAcct(n) { return String(n || '').replace(/\s+/g, ' ').trim(); }
+// Every Saloni account (Saloni, Saloni LIFE, Saloni •1234 ...) is one account.
+function cleanAcct(n) {
+  const c = String(n || '').replace(/\s+/g, ' ').trim();
+  return /^saloni/i.test(c) ? 'Saloni Westpac' : c;
+}
 function acctKeyOf(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 function canonAccount(name, known) {
   const c = cleanAcct(name);
@@ -410,11 +414,16 @@ function TxnProvider({ children }) {
       const canon = buildAcctCanon(txns);
       let changed = false;
       const next = txns.map(t => {
-        const c = canon[acctKeyOf(t.account)];
+        const c = canon[acctKeyOf(cleanAcct(t.account))];
         if (c && c !== t.account) { changed = true; return { ...t, account: c }; }
         return t;
       });
-      return changed ? { ...prev, transactions: next } : prev;
+      const names = {};
+      Object.entries(prev.acctNames || {}).forEach(([k, v]) => {
+        const c = canon[acctKeyOf(cleanAcct(v))] || cleanAcct(v);
+        names[k] = c; if (c !== v) changed = true;
+      });
+      return changed ? { ...prev, acctNames: prev.acctNames ? names : prev.acctNames, transactions: next } : prev;
     });
   }, [hydrated, T.transactions]);
 
