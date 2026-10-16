@@ -84,6 +84,35 @@ function hashTxn(date, amount, desc) {
   return Math.abs(h).toString(36);
 }
 
+// Transactions that share date+amount+description (e.g. two $25 repayments on
+// the same day) must still get distinct ids. The first occurrence keeps the
+// plain hash (so already-imported data still matches); later ones get _1, _2...
+function assignTxnIds(rows) {
+  const seen = {};
+  return rows.map(r => {
+    const base = hashTxn(r.date, r.amount, r.description);
+    const n = seen[base] = (seen[base] || 0) + 1;
+    return n === 1 ? base : base + '_' + (n - 1);
+  });
+}
+
+// Returns the txns not already stored. Matching is by occurrence count per base
+// hash, so legacy data (where same-day lookalikes were stored with an identical
+// id) isn't re-imported as extra copies.
+function filterNewTxns(existing, incoming) {
+  const have = {};
+  (existing || []).forEach(t => {
+    if (!t.id || String(t.id).startsWith('m_')) return;
+    const b = String(t.id).split('_')[0];
+    have[b] = (have[b] || 0) + 1;
+  });
+  return incoming.filter(t => {
+    const parts = String(t.id).split('_');
+    const n = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+    return n >= (have[parts[0]] || 0);
+  });
+}
+
 function uid() { return Math.random().toString(36).slice(2, 11); }
 
 function splitCsvLine(line) {
@@ -366,11 +395,10 @@ function TxnProvider({ children }) {
     setT(prev => ({...prev, customCats: (prev.customCats||[]).filter(c=>c.name!==name)}));
   }, []);
 
-  const importTransactions = useCallback(newTxns => {
+  const importTransactions = useCallback((newTxns, acctNames) => {
     setT(prev => {
-      const ids = new Set((prev.transactions||[]).map(t => t.id));
-      const added = newTxns.filter(t => !ids.has(t.id));
-      return { ...prev, transactions: [...(prev.transactions||[]), ...added] };
+      const added = filterNewTxns(prev.transactions, newTxns);
+      return { ...prev, acctNames: { ...(prev.acctNames||{}), ...(acctNames||{}) }, transactions: [...(prev.transactions||[]), ...added] };
     });
   }, []);
   const addManual = useCallback(txn => {
@@ -455,20 +483,24 @@ function UploadZone({ onDone }) {
       else if (bank === 'westpac') { raw = parseWestpacCSV(text); acctFromFile = detectAccount(raw,'westpac'); }
       else { raw = parseCommBankCSV(text); acctFromFile = detectAccount(raw, bank==='commbank'?'commbank':'unknown'); }
       if (!raw.length) { results.push({fname:file.name,bank,error:'No valid rows found',txns:[],total:0,dupes:0,fresh:0,account:'-'}); continue; }
-      const txns = raw.map(r => ({
-        id: hashTxn(r.date, r.amount, r.description),
+      // Reuse the name the user gave this account on a previous upload.
+      const acctKey = bank + ':' + (bank === 'westpac' ? ((raw.find(r => r.acctNum) || {}).acctNum || '') : '') + ':' + acctFromFile;
+      const savedName = (T.acctNames || {})[acctKey];
+      if (savedName) acctFromFile = savedName;
+      const ids = assignTxnIds(raw);
+      const txns = raw.map((r, i) => ({
+        id: ids[i],
         date: r.date,
         amount: r.amount,
         description: r.description,
-        account: r.account || acctFromFile,
+        account: (bank === 'macquarie' && !savedName ? r.account : null) || acctFromFile,
         category: r.preCat || autoCategory(r.description, T.learnedCats, r.amount),
         hidden: isAutoHide(r.description),
         manual: false,
         bank,
       }));
-      const existIds = new Set((T.transactions||[]).map(t => t.id));
-      const dupes = txns.filter(t => existIds.has(t.id)).length;
-      results.push({ fname:file.name, bank, txns, account:acctFromFile, total:txns.length, dupes, fresh:txns.length-dupes });
+      const dupes = txns.length - filterNewTxns(T.transactions, txns).length;
+      results.push({ fname:file.name, bank, txns, account:acctFromFile, acctKey, total:txns.length, dupes, fresh:txns.length-dupes });
     }
     if (results.length) setPreviews(p => [...p, ...results]);
   }
@@ -481,7 +513,11 @@ function UploadZone({ onDone }) {
     txns.filter(t => !t.hidden).forEach(t => { acc[t.category]=(acc[t.category]||0)+1; });
     return Object.entries(acc).sort((a,b) => b[1]-a[1]).slice(0,6);
   }
-  function doImport() { importTransactions(previews.flatMap(f=>f.txns)); setPreviews([]); if(onDone) onDone(); }
+  function doImport() {
+    const names = {};
+    previews.forEach(f => { if (f.acctKey && f.account && f.account !== '-') names[f.acctKey] = f.account; });
+    importTransactions(previews.flatMap(f=>f.txns), names); setPreviews([]); if(onDone) onDone();
+  }
 
   const totalFresh = previews.reduce((s,f) => s+f.fresh, 0);
   const bankLabel = {commbank:{icon:'bank',label:'CommBank'},macquarie:{icon:'landmark',label:'Macquarie'},westpac:{icon:'circle',label:'Westpac'},unknown:{icon:'help-circle',label:'Unknown'}};
