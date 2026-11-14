@@ -58,11 +58,18 @@ const AUTO_RULES = [
 // Strips reference numbers/dates/country codes so repeat charges from the
 // same merchant collapse to a stable key, regardless of the exact narrative.
 const DESC_PREFIX_RE = /^(DEBIT CARD PURCHASE|DEBIT CARD REFUND|EFTPOS DEBIT|WITHDRAWAL[- ]OSKO PAYMENT|WITHDRAWAL MOBILE|WITHDRAWAL ONLINE|WITHDRAWAL|DEPOSIT[- ]OSKO PAYMENT|DEPOSIT ONLINE|DEPOSIT[- ]SALARY|DEPOSIT)\s*/;
+const GENERIC_KEY_RE = /^(TRANSFER (TO|FROM)|FAST TRANSFER|ONLINE TRANSFER|TFR (TO|FROM|WESTPAC)|OSKO PAYMENT|PAYMENT (TO|FROM)|PAY ANYONE|BPAY|INTERNET TRANSFER|MOBILE TRANSFER)$/;
 function merchantKey(desc) {
   let d = (desc || '').toUpperCase().replace(DESC_PREFIX_RE, '');
   d = d.replace(/\d+/g, ' ').replace(/[^A-Z& ]/g, ' ').replace(/\b(AUS|AU|USA)\b/g, ' ');
   d = d.replace(/\s+/g, ' ').trim();
-  return d.split(' ').filter(Boolean).slice(0, 2).join(' ');
+  const w = d.split(' ').filter(Boolean);
+  // Generic bank-transfer wording ("TRANSFER TO <who>") says nothing about the
+  // payee in its first two words, so keying on them would lump rent paid to a
+  // landlord together with transfers between your own accounts - and
+  // re-categorising one would silently re-categorise the other. Keep the payee.
+  if (GENERIC_KEY_RE.test(w.slice(0, 2).join(' '))) return w.slice(0, 5).join(' ');
+  return w.slice(0, 2).join(' ');
 }
 
 function autoCategory(desc, learned, amount) {
